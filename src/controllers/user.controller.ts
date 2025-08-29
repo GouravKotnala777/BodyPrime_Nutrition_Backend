@@ -10,13 +10,19 @@ export async function register(req:Request, res:Response, next:NextFunction) {
 
     const isUserExist = await User.findOne({email});
 
-    if (isUserExist) return res.status(200).json({success:false, message:"user already exist", json:{email, password}});
+    if (isUserExist) return res.status(409).json({success:false, message:"user already exist i will change this message", json:{}});
 
-    const hashPassword = await bcrypt.hash(password, process.env.BCRYPT_SALT as string);
+    // hash password
+    const saltRounds = parseInt(process.env.BCRYPT_SALT || "10", 7);
+    const hashPassword = await bcrypt.hash(password, saltRounds);
 
+    // create new user
     const newUser = await User.create({
         name, email, password:hashPassword, mobile, gender
     });
 
-    res.status(200).json({success:true, message:"register successfull", json:{...newUser}})
+    // transform user object password free for response we also set this in userModel using toJSON method
+    const {password:_, ...userData} = newUser.toObject();
+
+    res.status(200).json({success:true, message:"register successfull", json:userData})
 }
