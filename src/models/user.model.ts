@@ -3,7 +3,7 @@ import mongoose, { Model } from "mongoose";
 interface UserTypes{
     name:string;
     email:string;
-    password:string;
+    password?:string;
     mobile:string;
     gender:"male"|"female"|"other";
     confirmPassword:string;
@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema<UserTypes>({
     },
     password:{
         type:String,
-        required:true
+        required:true,
+        select:false
     },
     mobile:{
         type:String,
@@ -32,7 +33,16 @@ const userSchema = new mongoose.Schema<UserTypes>({
         enum:["male", "female", "other"],
         required:true
     },
-}, {timestamps:true});
+}, {
+    toJSON: {
+        transform(doc, ret) {
+            delete ret.password;
+            return ret;
+        }
+    },
+    timestamps:true
+    }
+);
 
 const userModel:Model<UserTypes> = mongoose.models.User || mongoose.model<UserTypes>("User", userSchema);
 
