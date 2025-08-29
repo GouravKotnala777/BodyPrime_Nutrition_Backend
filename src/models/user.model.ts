@@ -6,7 +6,6 @@ interface UserTypes{
     password?:string;
     mobile:string;
     gender:"male"|"female"|"other";
-    confirmPassword:string;
 }
 
 const userSchema = new mongoose.Schema<UserTypes>({
