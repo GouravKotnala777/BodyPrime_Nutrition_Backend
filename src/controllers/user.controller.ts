@@ -1,17 +1,19 @@
 import express, { NextFunction, Request, Response } from "express";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import { ErrorHandler } from "../utils/classes.js";
+import { sendSuccessResponse } from "../utils/functions.js";
 
 
 export async function register(req:Request, res:Response, next:NextFunction) {
     try {
         const {name, email, password, mobile, gender} = req.body;
     
-        if (!name || !email || !password || !mobile || !gender) return res.status(400).json({success:false, message:"All fields are required", json:{name, email, password, mobile, gender}});
+        if (!name || !email || !password || !mobile || !gender) return next(new ErrorHandler("All fields are required", 400));
     
         const isUserExist = await User.findOne({email});
     
-        if (isUserExist) return res.status(409).json({success:false, message:"user already exist i will change this message", json:{}});
+        if (isUserExist) return next(new ErrorHandler("user already exist i will change this message", 409));
     
         // hash password
         const saltRounds = parseInt(process.env.BCRYPT_SALT || "10", 7);
@@ -25,9 +27,10 @@ export async function register(req:Request, res:Response, next:NextFunction) {
         // transform user object password free for response we also set this in userModel using toJSON method
         const {password:_, ...userData} = newUser.toObject();
     
-        res.status(201).json({success:true, message:"register successfull", json:userData})
+        sendSuccessResponse(res, "registration successfull", userData, 201);
     } catch (error) {
         console.log(error);
+        next(error);
     }
 }
 
@@ -35,25 +38,23 @@ export async function login(req:Request, res:Response, next:NextFunction){
     try {
         const {email, password} = req.body;
 
-        if (!email || !password) return res.status(400).json({success:false, message:"All fields are required", json:{email, password}});
+        if (!email || !password) return next(new ErrorHandler("All fields are required", 400));
         
         const isUserExist = await User.findOne({email}).select("+password");
-        console.log(isUserExist);
 
-        if (!isUserExist) return res.status(404).json({success:false, message:"email not found i will change this message", json:{}});
+        if (!isUserExist) return next(new ErrorHandler("email not found i will change this message", 404));
         
+        // compare hashed password
         const isPasswordMatch = await bcrypt.compare(password, isUserExist.password as string);
         
-        if (!isPasswordMatch) return res.status(401).json({success:false, message:"wrong password i will change this message", json:{}});
-        console.log(isPasswordMatch);
+        if (!isPasswordMatch) return next(new ErrorHandler("wrong password i will change this message", 401));
         
-        
+        // transform user object password free for response
         const {password:_, ...loginedUser } = isUserExist.toObject();
-
-        console.log(loginedUser);
         
-        res.status(200).json({success:true, message:"login successfull", json:loginedUser})
+        sendSuccessResponse(res, "login successfull", loginedUser, 200);
     } catch (error) {
         console.log(error);
+        next(error);
     }
 }
