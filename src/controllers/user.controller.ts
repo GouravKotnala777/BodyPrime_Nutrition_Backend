@@ -3,6 +3,8 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { ErrorHandler } from "../utils/classes.js";
 import { sendSuccessResponse } from "../utils/functions.js";
+import JsonWebToken from "jsonwebtoken";
+import { AuthenticatedResponse } from "../middlewares/middlewares.js";
 
 
 export async function register(req:Request, res:Response, next:NextFunction) {
@@ -52,6 +54,13 @@ export async function login(req:Request, res:Response, next:NextFunction){
         // transform user object password free for response
         const {password:_, ...loginedUser } = isUserExist.toObject();
         
+        const newToken = await JsonWebToken.sign({id:loginedUser._id}, process.env.JWT_SECRET as string, {expiresIn:"3d"})
+
+        if (!newToken) return next(new ErrorHandler("newToken not found", 404));
+        
+        res.cookie("token", newToken, {httpOnly:false, secure:false, sameSite:"none", maxAge:1000*60*60*24*3});
+        //res.cookie("token", loginedUser._id, {httpOnly:true, secure:true, sameSite:"none", maxAge:1000*60*60*24*3});
+
         sendSuccessResponse(res, "login successfull", loginedUser, 200);
     } catch (error) {
         console.log(error);
@@ -61,7 +70,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
 
 export async function myProfile(req:Request, res:Response, next:NextFunction){
     try {
-        const userID = req.params;
+        const userID = (req as AuthenticatedResponse).user.id;
         const me = await User.findById(userID);
 
         if (!me) return next(new ErrorHandler("login first", 401));
