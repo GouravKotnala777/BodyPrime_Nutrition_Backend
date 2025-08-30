@@ -58,3 +58,17 @@ export async function login(req:Request, res:Response, next:NextFunction){
         next(error);
     }
 }
+
+export async function myProfile(req:Request, res:Response, next:NextFunction){
+    try {
+        const userID = req.params;
+        const me = await User.findById(userID);
+
+        if (!me) return next(new ErrorHandler("login first", 401));
+
+        sendSuccessResponse(res, "loggedIn user", me, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+}
