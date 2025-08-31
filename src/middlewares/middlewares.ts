@@ -27,7 +27,6 @@ export async function errorMiddleware(err:ErrorHandler, req:Request, res:Respons
 export async function isUserAuthenticated(req:Request, res:Response, next:NextFunction){
     try {
         const JWT_SECRET = process.env.JWT_SECRET;
-        console.log({reqHeader:req.headers.authorization});
         const token:string|null = req.cookies?.token || req.headers.authorization?.split(" ")[1] || null;
 
         if (!token) return next(new ErrorHandler("token not found", 404));

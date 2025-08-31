@@ -1,8 +1,8 @@
-import express, { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { ErrorHandler } from "../utils/classes.js";
-import { sendSuccessResponse } from "../utils/functions.js";
+import { sendEmail, sendSuccessResponse } from "../utils/functions.js";
 import JsonWebToken from "jsonwebtoken";
 import { AuthenticatedResponse } from "../middlewares/middlewares.js";
 
@@ -18,7 +18,7 @@ export async function register(req:Request, res:Response, next:NextFunction) {
         if (isUserExist) return next(new ErrorHandler("user already exist i will change this message", 409));
     
         // hash password
-        const saltRounds = parseInt(process.env.BCRYPT_SALT || "10", 7);
+        const saltRounds = parseInt(process.env.BCRYPT_SALT || "10" || "10", 7);
         const hashPassword = await bcrypt.hash(password, saltRounds);
     
         // create new user
@@ -34,7 +34,7 @@ export async function register(req:Request, res:Response, next:NextFunction) {
         console.log(error);
         next(error);
     }
-}
+};
 
 export async function login(req:Request, res:Response, next:NextFunction){
     try {
@@ -66,7 +66,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
         console.log(error);
         next(error);
     }
-}
+};
 
 export async function myProfile(req:Request, res:Response, next:NextFunction){
     try {
@@ -80,4 +80,87 @@ export async function myProfile(req:Request, res:Response, next:NextFunction){
         console.log(error);
         next(error);
     }
+};
+
+export async function forgetPassword(req:Request, res:Response, next:NextFunction){
+    try {
+        const {email} = req.body;
+        const JWT_SECRET = process.env.JWT_SECRET;
+
+        if (!email) return next(new ErrorHandler("Email is required", 400));
+        
+        // find if any user already exists with this email
+        const isUserWithThisEmailExist = await User.findOne({email});
+        
+        if (!isUserWithThisEmailExist) return next(new ErrorHandler("Email not exists", 404));
+        if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
+        
+        const resetPasswordToken = await JsonWebToken.sign({id:isUserWithThisEmailExist._id}, JWT_SECRET, {expiresIn:"1h"})
+        if (!resetPasswordToken) return next(new ErrorHandler("resetPasswordToken not found", 404));
+
+        // Send token along with link email 
+        const sendEmailRes = await sendEmail({
+            to:email,
+            subject:"texting ho rahi hai",
+            text:"badmoshi chal rahi hai",
+            html:`
+            <html>
+                <head>
+                    <title></title>
+                </head>
+                <body>
+                    <h1>Click on this link</h1>
+                    <p>http://localhost:8000/user/reset_password?reset_password_token=${resetPasswordToken}</p>
+                </body>
+            </html>
+            `
+        });
+
+        console.log({sendEmailRes});
+        
+        sendSuccessResponse(res, "Email has been sent", {sendEmailRes}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
 }
+
+export async function resetPassword(req:Request, res:Response, next:NextFunction){
+    try {
+        const {password} = req.body;
+        const {reset_password_token:resetPasswordToken} = req.query;
+        const JWT_SECRET = process.env.JWT_SECRET;
+
+        if (!password) return next(new ErrorHandler("Password is required", 400));
+        if (!resetPasswordToken) return next(new ErrorHandler("reset_password_token is not found", 404));
+        if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET is not found", 404));
+
+
+        // verify token for reset password
+        const verifyResetPasswordToken = await JsonWebToken.verify(resetPasswordToken as string, JWT_SECRET) as {id:string};
+        
+        if (!verifyResetPasswordToken) return next(new ErrorHandler("verifyResetPasswordToken not matched", 401));
+        
+
+        // hash password
+        const saltRounds = parseInt(process.env.BCRYPT_SALT || "10", 7)
+        const hashPassword = await bcrypt.hash(password as string, saltRounds);
+
+        const findUserByIdAndUpdate = await User.findByIdAndUpdate(verifyResetPasswordToken.id, {
+            password:hashPassword
+        });
+
+        if (!findUserByIdAndUpdate) return next(new ErrorHandler("Internal Server Error", 500));
+
+        const newToken = await JsonWebToken.sign({id:findUserByIdAndUpdate._id}, process.env.JWT_SECRET as string, {expiresIn:"3d"})
+
+        if (!newToken) return next(new ErrorHandler("newToken not found", 404));
+        
+        res.cookie("token", newToken, {httpOnly:false, secure:false, sameSite:"none", maxAge:1000*60*60*24*3});
+        
+        sendSuccessResponse(res, "Password updated successfully", {findUserByIdAndUpdate}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
+};
