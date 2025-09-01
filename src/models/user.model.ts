@@ -6,6 +6,7 @@ interface UserTypes{
     password?:string;
     mobile:string;
     gender:"male"|"female"|"other";
+    role:"user"|"admin"|"developer";
     isVerified:boolean;
     emailVerificationToken?:string|null;
     emailVerificationTokenExpire?:number|null;
@@ -34,6 +35,11 @@ const userSchema = new mongoose.Schema<UserTypes>({
         type:String,
         enum:["male", "female", "other"],
         required:true
+    },
+    role:{
+        type:String,
+        enum:["user", "admin", "developer"],
+        default:"user"
     },
     isVerified:{
         type:Boolean,

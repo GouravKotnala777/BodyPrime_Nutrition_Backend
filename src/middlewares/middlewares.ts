@@ -1,12 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
 import JsonWebToken, { JwtPayload } from "jsonwebtoken";
+import User from "../models/user.model.js";
 
 export interface AuthenticatedResponse extends Request {
     user:JwtPayload&{id:string};
 };
 
-export async function errorMiddleware(err:ErrorHandler, req:Request, res:Response, next:NextFunction) {
+export async function errorMiddleware(err:ErrorHandler, req:Request, res:Response) {
     let message = err.message || "Internal Server Error";
     let statusCode = err.statusCode || 500;
     
@@ -35,6 +36,23 @@ export async function isUserAuthenticated(req:Request, res:Response, next:NextFu
         (req as AuthenticatedResponse).user = user;
         
         next();
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
+export async function isUserAdmin(req:Request, res:Response, next:NextFunction){
+    try {
+        const userID = (req as AuthenticatedResponse).user.id;
+
+        if (!userID) return next(new ErrorHandler("userID not found", 404));
+
+        const user = await User.findById(userID);
+
+        if(user?.role !== "admin") return next(new ErrorHandler("only admin can access this route", 403));
+
+        next();        
     } catch (error) {
         console.log(error);
         next(error);
