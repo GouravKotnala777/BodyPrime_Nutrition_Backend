@@ -65,6 +65,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
     try {
         const {email, password} = req.body;
         const JWT_SECRET = process.env.JWT_SECRET;
+        const NODE_ENV = process.env.NODE_ENV;
 
         if (!email || !password) return next(new ErrorHandler("All fields are required", 400));
         
@@ -85,8 +86,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
     
             if (!newToken) return next(new ErrorHandler("newToken not found", 404));
             
-            res.cookie("token", newToken, {httpOnly:false, secure:false, sameSite:"none", maxAge:1000*60*60*24*3});
-            //res.cookie("token", loginedUser._id, {httpOnly:true, secure:true, sameSite:"none", maxAge:1000*60*60*24*3});
+            res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
     
             sendSuccessResponse(res, "login successfull", loginedUser, 200);
         }
@@ -190,6 +190,7 @@ export async function resetPassword(req:Request, res:Response, next:NextFunction
         const {password} = req.body;
         const {reset_password_token:resetPasswordToken} = req.query;
         const JWT_SECRET = process.env.JWT_SECRET;
+        const NODE_ENV = process.env.NODE_ENV;
 
         if (!password) return next(new ErrorHandler("Password is required", 400));
         if (!resetPasswordToken) return next(new ErrorHandler("reset_password_token is not found", 404));
@@ -216,7 +217,7 @@ export async function resetPassword(req:Request, res:Response, next:NextFunction
 
         if (!newToken) return next(new ErrorHandler("newToken not found", 404));
         
-        res.cookie("token", newToken, {httpOnly:false, secure:false, sameSite:"none", maxAge:1000*60*60*24*3});
+        res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
         
         sendSuccessResponse(res, "Password updated successfully", {findUserByIdAndUpdate}, 201);
     } catch (error) {
@@ -227,9 +228,9 @@ export async function resetPassword(req:Request, res:Response, next:NextFunction
 
 export async function verifyEmail(req:Request, res:Response, next:NextFunction){
     try {
-
         const {email_verification_token:emailVerificationToken} = req.query;
         const JWT_SECRET = process.env.JWT_SECRET;
+        const NODE_ENV = process.env.NODE_ENV;
 
         if (!emailVerificationToken) return next(new ErrorHandler("emailVerificationToken not found", 404));
         if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
@@ -262,7 +263,7 @@ export async function verifyEmail(req:Request, res:Response, next:NextFunction){
 
         if (!newToken) return next(new ErrorHandler("newToken not found", 404));
 
-        res.cookie("token", newToken, {httpOnly:false, secure:false, sameSite:"none", maxAge:1000*60*60*24*3});
+        res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
         //res.cookie("token", loginedUser._id, {httpOnly:true, secure:true, sameSite:"none", maxAge:1000*60*60*24*3});
 
         sendSuccessResponse(res,"Email verification successfull", {loginedUser}, 201);
@@ -275,10 +276,11 @@ export async function verifyEmail(req:Request, res:Response, next:NextFunction){
 export async function logout(req:Request, res:Response, next:NextFunction){
     try {
         const token = req.cookies.token;
+        const NODE_ENV = process.env.NODE_ENV;
         
         if (!token) return next(new ErrorHandler("token not found", 404));
 
-        res.clearCookie("token", {httpOnly:false, secure:false, sameSite:"strict"});
+        res.clearCookie("token", {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"strict"});
 
         sendSuccessResponse(res, "User Logout", {token}, 201);
     } catch (error) {
