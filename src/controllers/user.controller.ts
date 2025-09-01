@@ -277,4 +277,17 @@ export async function logout(req:Request, res:Response, next:NextFunction){
         console.log(error);
         next(error);
     }
-}
+};
+
+export async function getAllUsers(req:Request, res:Response, next:NextFunction){
+    try {
+        const allUsers = await User.find();
+
+        const resMessage = allUsers.length === 0 ? "No user yet" : "All users";
+
+        sendSuccessResponse(res, resMessage , {...allUsers}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};

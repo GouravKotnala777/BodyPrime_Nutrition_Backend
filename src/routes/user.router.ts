@@ -1,6 +1,6 @@
 import express from "express";
-import {forgetPassword, login, logout, myProfile, register, resetPassword, verifyEmail} from "../controllers/user.controller.js";
-import { isUserAuthenticated } from "../middlewares/middlewares.js";
+import {forgetPassword, getAllUsers, login, logout, myProfile, register, resetPassword, verifyEmail} from "../controllers/user.controller.js";
+import { isUserAdmin, isUserAuthenticated } from "../middlewares/middlewares.js";
 
 const userRouter = express.Router();
 
@@ -12,4 +12,5 @@ userRouter.route("/reset_password").put(resetPassword);
 userRouter.route("/email_verification").put(verifyEmail);
 userRouter.route("/logout").post(isUserAuthenticated, logout);
 
+userRouter.route("/all_users").get(isUserAuthenticated, isUserAdmin, getAllUsers)
 export default userRouter;
