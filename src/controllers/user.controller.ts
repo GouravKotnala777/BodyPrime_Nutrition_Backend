@@ -271,3 +271,18 @@ export async function verifyEmail(req:Request, res:Response, next:NextFunction){
         next(error);
     }
 };
+
+export async function logout(req:Request, res:Response, next:NextFunction){
+    try {
+        const token = req.cookies.token;
+        
+        if (!token) return next(new ErrorHandler("token not found", 404));
+
+        res.clearCookie("token", {httpOnly:false, secure:false, sameSite:"strict"});
+
+        sendSuccessResponse(res, "User Logout", {token}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+}
