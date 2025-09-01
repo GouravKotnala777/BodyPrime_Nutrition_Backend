@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleware } from "./middlewares/middlewares.js";
+import productRouter from "./routes/product.router.js";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
 app.use("/user", userRouter);
+app.use("/product", productRouter);
 
 app.use(errorMiddleware);
 
