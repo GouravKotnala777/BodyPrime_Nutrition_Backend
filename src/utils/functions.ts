@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { ErrorHandler } from "./classes.js";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
+import jsonWebToken, { JwtPayload, SignOptions } from "jsonwebtoken";
 
 interface SendEmailOptionsTypes{
     to:string;
@@ -62,5 +64,44 @@ export async function generateRandomCode(length:number=6){
     } catch (error) {
         console.log(error);
         throw new ErrorHandler((error as {message:string}).message || "Unable to generate code", 500);
+    }
+};
+
+export async function hashPassword(password:string) {
+    try {
+        const BCRYPT_SALT = process.env.BCRYPT_SALT;
+    
+        if(!BCRYPT_SALT) throw new ErrorHandler("BCRYPT_SALT not found", 404);
+    
+        const saltRounds = parseInt(BCRYPT_SALT, 7);
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        return hashedPassword;
+    } catch (error) {
+        console.log(error);
+        throw error;        
+    }
+};
+
+export async function generateJWTToken({payload, secret, options}:{payload:JwtPayload, secret?:string, options:SignOptions}) {
+    try {
+        if (!secret) throw new ErrorHandler("JWT_SECRET not found", 404);
+        const token = await jsonWebToken.sign(payload, secret, options);
+        if (!token) throw new ErrorHandler("token not created", 500);
+        return token;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+};
+
+export async function verifyJWTToken({token, secret}:{token:string, secret?:string}) {
+    try {
+        if (!secret) throw new ErrorHandler("JWT_SECRET not found", 404);
+        const payload = await jsonWebToken.verify(token, secret);
+        if (!payload) throw new ErrorHandler("payload not generated", 500);
+        return payload;
+    } catch (error) {
+        console.log(error);
+        throw error;
     }
 };

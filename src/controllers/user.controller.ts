@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { ErrorHandler } from "../utils/classes.js";
-import { sendEmail, sendSuccessResponse } from "../utils/functions.js";
+import { generateJWTToken, hashPassword, sendEmail, sendSuccessResponse, verifyJWTToken } from "../utils/functions.js";
 import JsonWebToken from "jsonwebtoken";
 import { AuthenticatedResponse } from "../middlewares/middlewares.js";
 
@@ -19,17 +19,15 @@ export async function register(req:Request, res:Response, next:NextFunction) {
         if (isUserExist) return next(new ErrorHandler("user already exist i will change this message", 409));
         
         // hash password
-        const saltRounds = parseInt(process.env.BCRYPT_SALT || "10" || "10", 7);
-        const hashPassword = await bcrypt.hash(password, saltRounds);
+        const hashedPassword = await hashPassword(password);
         
         // generate emailVerificationToken for email verification
-        if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
-        const emailVerificationToken = await JsonWebToken.sign({email}, JWT_SECRET, {expiresIn:"1h"});
+        const emailVerificationToken = await generateJWTToken({payload:{email}, secret:JWT_SECRET, options:{expiresIn:"1h"}});
 
 
         // create new user
         const newUser = await User.create({
-            name, email, password:hashPassword, mobile, gender,
+            name, email, password:hashedPassword, mobile, gender,
             emailVerificationToken,
             emailVerificationTokenExpire:Date.now()+90000
         });
@@ -82,9 +80,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
         const {password:_, ...loginedUser } = isUserExist.toObject();
 
         if (isUserExist.isVerified) {
-            const newToken = await JsonWebToken.sign({id:loginedUser._id}, process.env.JWT_SECRET as string, {expiresIn:"3d"})
-    
-            if (!newToken) return next(new ErrorHandler("newToken not found", 404));
+            const newToken = await generateJWTToken({payload:{id:loginedUser._id}, secret:JWT_SECRET, options:{expiresIn:"3d"}});
             
             res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
     
@@ -93,7 +89,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
         else{
             // generate emailVerificationToken for email verification
             if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
-            const emailVerificationToken = await JsonWebToken.sign({email}, JWT_SECRET, {expiresIn:"1h"});
+            const emailVerificationToken = await generateJWTToken({payload:{email}, secret:JWT_SECRET, options:{expiresIn:"1h"}});
 
             isUserExist.emailVerificationToken = emailVerificationToken;
             isUserExist.emailVerificationTokenExpire = Date.now() + 90000;
@@ -155,7 +151,7 @@ export async function forgetPassword(req:Request, res:Response, next:NextFunctio
         if (!isUserWithThisEmailExist) return next(new ErrorHandler("Email not exists", 404));
         if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
         
-        const resetPasswordToken = await JsonWebToken.sign({id:isUserWithThisEmailExist._id}, JWT_SECRET, {expiresIn:"1h"})
+        const resetPasswordToken = await generateJWTToken({payload:{id:isUserWithThisEmailExist._id}, secret:JWT_SECRET, options:{expiresIn:"1h"}});
         if (!resetPasswordToken) return next(new ErrorHandler("resetPasswordToken not found", 404));
 
         // Send token along with link email 
@@ -198,22 +194,18 @@ export async function resetPassword(req:Request, res:Response, next:NextFunction
 
 
         // verify token for reset password
-        const verifyResetPasswordToken = await JsonWebToken.verify(resetPasswordToken as string, JWT_SECRET) as {id:string};
-        
-        if (!verifyResetPasswordToken) return next(new ErrorHandler("verifyResetPasswordToken not matched", 401));
-        
+        const verifyResetPasswordToken = await verifyJWTToken({token:resetPasswordToken as string, secret:JWT_SECRET}) as {id:string};
 
         // hash password
-        const saltRounds = parseInt(process.env.BCRYPT_SALT || "10", 7)
-        const hashPassword = await bcrypt.hash(password as string, saltRounds);
+        const hashedPassword = await hashPassword(password);
 
         const findUserByIdAndUpdate = await User.findByIdAndUpdate(verifyResetPasswordToken.id, {
-            password:hashPassword
+            password:hashedPassword
         });
 
         if (!findUserByIdAndUpdate) return next(new ErrorHandler("Internal Server Error", 500));
 
-        const newToken = await JsonWebToken.sign({id:findUserByIdAndUpdate._id}, process.env.JWT_SECRET as string, {expiresIn:"3d"})
+        const newToken = await generateJWTToken({payload:{id:findUserByIdAndUpdate._id}, secret:JWT_SECRET, options:{expiresIn:"3d"}});
 
         if (!newToken) return next(new ErrorHandler("newToken not found", 404));
         
@@ -236,7 +228,7 @@ export async function verifyEmail(req:Request, res:Response, next:NextFunction){
         if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
         
         
-        const verifyEmailVerificationToken = await JsonWebToken.verify(emailVerificationToken as string, JWT_SECRET) as {email:string};
+        const verifyEmailVerificationToken = await verifyJWTToken({token:emailVerificationToken as string, secret:JWT_SECRET}) as {email:string};
 
         const findUser = await User.findOne({
             email:verifyEmailVerificationToken.email,
@@ -258,13 +250,11 @@ export async function verifyEmail(req:Request, res:Response, next:NextFunction){
         // transform user object password free for response
         const {password:_, ...loginedUser } = findUser.toObject();
         
-        const newToken = await JsonWebToken.sign({id:loginedUser._id}, process.env.JWT_SECRET as string, {expiresIn:"3d"})
-
+        const newToken = await generateJWTToken({payload:{id:loginedUser._id}, secret:JWT_SECRET, options:{expiresIn:"3d"}});
 
         if (!newToken) return next(new ErrorHandler("newToken not found", 404));
 
         res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
-        //res.cookie("token", loginedUser._id, {httpOnly:true, secure:true, sameSite:"none", maxAge:1000*60*60*24*3});
 
         sendSuccessResponse(res,"Email verification successfull", {loginedUser}, 201);
     } catch (error) {

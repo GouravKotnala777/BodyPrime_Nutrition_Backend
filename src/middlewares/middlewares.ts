@@ -1,8 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
-import { sendSuccessResponse } from "../utils/functions.js";
-import User from "../models/user.model.js";
-import mongoose from "mongoose";
 import JsonWebToken, { JwtPayload } from "jsonwebtoken";
 
 export interface AuthenticatedResponse extends Request {
