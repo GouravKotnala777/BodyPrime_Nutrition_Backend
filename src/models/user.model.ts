@@ -6,6 +6,9 @@ interface UserTypes{
     password?:string;
     mobile:string;
     gender:"male"|"female"|"other";
+    isVerified:boolean;
+    emailVerificationToken?:string|null;
+    emailVerificationTokenExpire?:number|null;
 }
 
 const userSchema = new mongoose.Schema<UserTypes>({
@@ -32,6 +35,18 @@ const userSchema = new mongoose.Schema<UserTypes>({
         enum:["male", "female", "other"],
         required:true
     },
+    isVerified:{
+        type:Boolean,
+        default:false
+    },
+    emailVerificationToken:{
+        type:String,
+        default:null
+    },
+    emailVerificationTokenExpire:{
+        type:Number,
+        default:null
+    }
 }, {
     toJSON: {
         transform(doc, ret) {
