@@ -129,3 +129,83 @@ export async function addImages(req:Request, res:Response, next:NextFunction) {
         next(error);
     }
 };
+
+export async function updateProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {
+            name,
+            price,
+            brand,
+            category,
+            size,
+            tag,
+            description,
+            stock,
+            weight,
+            ingredients,
+
+            servingSize,
+            servingsPerContainer,
+            protein,
+            carbs,
+            fat,
+            calories,
+
+            flavor,
+            warning
+        } = req.body;
+        const productID = req.query;
+
+        if (!name &&
+            !price &&
+            !brand &&
+            !category &&
+            !size &&
+            !tag &&
+            !description &&
+            !stock &&
+            !weight &&
+            !ingredients &&
+
+            !servingSize &&
+            !servingsPerContainer &&
+            !protein &&
+            !carbs &&
+            !fat &&
+            !calories &&
+
+            !flavor &&
+            !warning) return next(new ErrorHandler("Did not provide any field", 400));
+        if (!productID) return next(new ErrorHandler("ProductID not found", 404));
+
+        const findProductAndUpdate = Product.findByIdAndUpdate(productID, {
+            ...(name&&{name}),
+            ...(price&&{price}),
+            ...(brand&&{brand}),
+            ...(category&&{category}),
+            ...(size&&{size}),
+            ...(tag&&{tag}),
+            ...(description&&{description}),
+            ...(stock&&{stock}),
+            ...(weight&&{weight}),
+            ...(ingredients&&{ingredients}),
+
+            ...(servingSize&&{servingSize}),
+            ...(servingsPerContainer&&{servingsPerContainer}),
+            ...(protein&&{protein}),
+            ...(carbs&&{carbs}),
+            ...(fat&&{fat}),
+            ...(calories&&{calories}),
+
+            ...(flavor&&{flavor}),
+            ...(warning&&{warning})
+        });
+        
+        if (!findProductAndUpdate) return next(new ErrorHandler("Internal Server Error", 500));
+
+        sendSuccessResponse(res, "Product pdated successfully", {...findProductAndUpdate}, 200);
+    } catch (error) {
+        console.log(error);
+        throw new ErrorHandler("Koi problem aa gai", 500);
+    }
+}
