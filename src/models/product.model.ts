@@ -54,7 +54,10 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     size:{
         type:Number,
         required:true
-    }
+    },
+    tag:[{
+        type:String
+    }]
 
 }, {
     timestamps:true

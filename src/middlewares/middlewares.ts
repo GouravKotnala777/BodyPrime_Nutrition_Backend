@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
 import JsonWebToken, { JwtPayload } from "jsonwebtoken";
 import User from "../models/user.model.js";
+import multer from "multer";
 
 export interface AuthenticatedResponse extends Request {
     user:JwtPayload&{id:string};
@@ -57,4 +58,25 @@ export async function isUserAdmin(req:Request, res:Response, next:NextFunction){
         console.log(error);
         next(error);
     }
-}
+};
+
+const storage = multer.diskStorage({
+    destination(req, file, cb) {
+        cb(null, "/uploads");
+    },
+    filename(req, file, cb) {
+        const uniqueSuffix = Date.now() + "-" + file.originalname;
+        cb(null, uniqueSuffix);
+    },
+});
+export const upload = multer({storage});
+
+
+//function func() {
+//    try {
+        
+//    } catch (error) {
+//        console.log(error);
+//        throw new ErrorHandler("Koi problem aa gai", 500);
+//    }
+//}

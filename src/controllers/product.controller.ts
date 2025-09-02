@@ -64,12 +64,14 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
             weight,
             ingredients,
 
-            servingSize,
-            servingsPerContainer,
-            protein,
-            carbs,
-            fat,
-            calories
+            nutritionFacts:{
+                servingSize,
+                servingsPerContainer,
+                protein,
+                carbs,
+                fat,
+                calories
+            }
         });
 
         if (!newProduct) return next(new ErrorHandler("Internal Server Error", 500));
@@ -96,4 +98,34 @@ export async function allProducts(req:Request, res:Response, next:NextFunction) 
         console.log(error);
         next(error);
     }
-}
+};
+
+export async function addImages(req:Request, res:Response, next:NextFunction) {
+    try {
+        const productID = req.body;
+
+        if (!productID) return next(new ErrorHandler("productID not found", 404));
+        if (!req.files || req.files.length === 0) return next(new ErrorHandler("no image uploaded thik hai", 400));
+
+        
+        const files = (req.files as Express.Multer.File[]);
+        const filePath = files.map((file) => `/uploads/${file.filename}`);
+        console.log({files});
+        console.log({filePath});
+
+        if (filePath.length === 0) return next(new ErrorHandler("files array is empty", 400));
+        
+        const selectedProduct = await Product.findByIdAndUpdate(productID, {
+            images:filePath
+        });
+        
+        if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
+
+        const product = selectedProduct.toObject();
+
+        sendSuccessResponse(res, "Images uploaded successfully", {...product}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
