@@ -82,3 +82,18 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
         next(error);
     }
 };
+
+export async function allProducts(req:Request, res:Response, next:NextFunction) {
+    try {
+        const limit = 2;
+        const {skip=0} = req.query;
+
+        const allProducts = await Product.find().skip(Number(skip)*limit).limit(limit);
+
+        const resMessage = (allProducts.length === 0) ? "No product yet!" : "All products";
+        sendSuccessResponse(res, resMessage, {...allProducts}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+}
