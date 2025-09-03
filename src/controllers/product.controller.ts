@@ -206,6 +206,23 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
         sendSuccessResponse(res, "Product pdated successfully", {...findProductAndUpdate}, 200);
     } catch (error) {
         console.log(error);
-        throw new ErrorHandler("Koi problem aa gai", 500);
+        next(error);
     }
-}
+};
+
+export async function deleteProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {productID} = req.query;
+
+        if (!productID) return next(new ErrorHandler("ProductID not found", 404));
+
+        const findProductAndDelete = await Product.findByIdAndDelete(productID);        
+        
+        if (!findProductAndDelete) return next(new ErrorHandler("Internal Server Error", 500));
+
+        sendSuccessResponse(res, "Product deleted successfully", findProductAndDelete, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
