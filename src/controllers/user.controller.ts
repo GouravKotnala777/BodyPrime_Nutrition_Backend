@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { ErrorHandler } from "../utils/classes.js";
 import { generateJWTToken, hashPassword, sendEmail, sendSuccessResponse, verifyJWTToken } from "../utils/functions.js";
 import JsonWebToken from "jsonwebtoken";
-import { AuthenticatedResponse } from "../middlewares/middlewares.js";
+import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 
 
 export async function register(req:Request, res:Response, next:NextFunction) {
@@ -126,7 +126,7 @@ export async function login(req:Request, res:Response, next:NextFunction){
 
 export async function myProfile(req:Request, res:Response, next:NextFunction){
     try {
-        const userID = (req as AuthenticatedResponse).user.id;
+        const userID = (req as AuthenticatedRequest).user.id;
         const me = await User.findById(userID);
 
         if (!me) return next(new ErrorHandler("login first", 401));

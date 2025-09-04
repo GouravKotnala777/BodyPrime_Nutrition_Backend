@@ -4,7 +4,7 @@ import JsonWebToken, { JwtPayload } from "jsonwebtoken";
 import User from "../models/user.model.js";
 import multer from "multer";
 
-export interface AuthenticatedResponse extends Request {
+export interface AuthenticatedRequest extends Request {
     user:JwtPayload&{id:string};
 };
 
@@ -34,7 +34,7 @@ export async function isUserAuthenticated(req:Request, res:Response, next:NextFu
 
         const user = await JsonWebToken.verify(token, JWT_SECRET as string) as ({id:string} & JwtPayload);        
 
-        (req as AuthenticatedResponse).user = user;
+        (req as AuthenticatedRequest).user = user;
         
         next();
     } catch (error) {
@@ -45,7 +45,7 @@ export async function isUserAuthenticated(req:Request, res:Response, next:NextFu
 
 export async function isUserAdmin(req:Request, res:Response, next:NextFunction){
     try {
-        const userID = (req as AuthenticatedResponse).user.id;
+        const userID = (req as AuthenticatedRequest).user.id;
 
         if (!userID) return next(new ErrorHandler("userID not found", 404));
 
