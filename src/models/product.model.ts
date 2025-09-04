@@ -24,7 +24,7 @@ export interface ProductTypes {
     numReviews: number;
     flavor?:string;
     warning?:string[];
-}
+};
 
 const productSchema = new mongoose.Schema<ProductTypes>({
     name: { type: String, required: true, trim: true },
