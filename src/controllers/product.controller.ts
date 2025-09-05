@@ -100,6 +100,23 @@ export async function getProducts(req:Request, res:Response, next:NextFunction) 
     }
 };
 
+export async function getSingleProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {productID} = req.params;
+        
+        if (!productID) return next(new ErrorHandler("productID not found", 404));
+        
+        const selectedProduct = await Product.findById(productID);
+        
+        if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
+
+        sendSuccessResponse(res, "Single product", selectedProduct.toObject(), 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+}
+
 export async function addImages(req:Request, res:Response, next:NextFunction) {
     try {
         const productID = req.body;

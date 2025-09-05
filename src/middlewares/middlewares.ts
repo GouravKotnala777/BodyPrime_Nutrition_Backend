@@ -8,7 +8,7 @@ export interface AuthenticatedRequest extends Request {
     user:JwtPayload&{id:string};
 };
 
-export async function errorMiddleware(err:ErrorHandler, req:Request, res:Response) {
+export async function errorMiddleware(err:ErrorHandler, req:Request, res:Response, next:NextFunction) {
     let message = err.message || "Internal Server Error";
     let statusCode = err.statusCode || 500;
     
