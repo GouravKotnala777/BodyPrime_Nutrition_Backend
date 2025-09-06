@@ -21,6 +21,7 @@ export interface ProductTypes {
         calories?: number;
     };
     rating: number;
+    avgRating:number;
     numReviews: number;
     flavor?:string;
     warning?:string[];
@@ -50,6 +51,7 @@ const productSchema = new mongoose.Schema<ProductTypes>({
       calories: { type: Number },
     },
     rating: { type: Number, default: 0 },
+    avgRating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
     size:{
         type:Number,
