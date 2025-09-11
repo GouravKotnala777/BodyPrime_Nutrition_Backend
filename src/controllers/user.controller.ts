@@ -138,6 +138,27 @@ export async function myProfile(req:Request, res:Response, next:NextFunction){
     }
 };
 
+export async function updateMyProfile(req:Request, res:Response, next:NextFunction){
+    try {
+        const {name, mobile, gender} = req.body;
+
+        if (!name && !mobile && !gender) return next(new ErrorHandler("All fields are empty", 400));
+        const userID = (req as AuthenticatedRequest).user.id;
+        const updatedProfile = await User.findByIdAndUpdate(userID, {
+            ...(name&&{name}),
+            ...(mobile&&{mobile}),
+            ...(gender&&{gender})
+        }, {new:true});
+
+        if (!updatedProfile) return next(new ErrorHandler("Internal server error", 500));
+
+        sendSuccessResponse(res, "Profile updated", updatedProfile, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
 export async function forgetPassword(req:Request, res:Response, next:NextFunction){
     try {
         const {email} = req.body;
