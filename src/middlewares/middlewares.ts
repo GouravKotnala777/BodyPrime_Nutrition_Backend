@@ -62,7 +62,7 @@ export async function isUserAdmin(req:Request, res:Response, next:NextFunction){
 
 const storage = multer.diskStorage({
     destination(req, file, cb) {
-        cb(null, "/uploads");
+        cb(null, "public");
     },
     filename(req, file, cb) {
         const uniqueSuffix = Date.now() + "-" + file.originalname;

@@ -119,16 +119,14 @@ export async function getSingleProduct(req:Request, res:Response, next:NextFunct
 
 export async function addImages(req:Request, res:Response, next:NextFunction) {
     try {
-        const productID = req.body;
+        const {productID} = req.body;
 
         if (!productID) return next(new ErrorHandler("productID not found", 404));
         if (!req.files || req.files.length === 0) return next(new ErrorHandler("no image uploaded thik hai", 400));
 
         
         const files = (req.files as Express.Multer.File[]);
-        const filePath = files.map((file) => `/uploads/${file.filename}`);
-        console.log({files});
-        console.log({filePath});
+        const filePath = files.map((file) => `/public/${file.filename}`);
 
         if (filePath.length === 0) return next(new ErrorHandler("files array is empty", 400));
         

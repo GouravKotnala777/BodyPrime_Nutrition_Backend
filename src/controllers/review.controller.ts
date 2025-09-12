@@ -69,4 +69,21 @@ export async function createReview(req:Request, res:Response, next:NextFunction)
         console.log(error);
         next(error);
     }
-}
+};
+
+export async function getReviews(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {productID} = req.params;
+
+        if (!productID) return next(new ErrorHandler("productID not found", 404));
+        
+        const allReviews = await Review.find({
+            productID
+        }).populate("userID", "name", "User");
+
+        sendSuccessResponse(res, "Products all reviews", allReviews, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
