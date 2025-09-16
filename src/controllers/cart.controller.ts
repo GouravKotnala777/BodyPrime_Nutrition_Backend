@@ -1,16 +1,16 @@
 import { NextFunction, Request, Response } from "express";
-import Cart from "../models/cart.model.js";
+import Cart, { CartTypesPopulates } from "../models/cart.model.js";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { ErrorHandler } from "../utils/classes.js";
 import { sendSuccessResponse } from "../utils/functions.js";
-import mongoose from "mongoose";
+import { Document } from "mongoose";
 import Product from "../models/product.model.js";
 
 
-export async function addToCart(req:Request<{}, {}, {products:{productID:string; quantity:number;}}>, res:Response, next:NextFunction) {
+export async function addToCart(req:Request<{}, {}, {productID:string; quantity:number;}>, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
-        const {products} = req.body;
+        const products = req.body;
         const cart = await Cart.findOne({
             userID
         });
@@ -24,22 +24,36 @@ export async function addToCart(req:Request<{}, {}, {products:{productID:string;
         const price = selectedProduct.price;
 
         if (cart) {
-            const isProductAlreadyAdded = cart.products.find((p) => p.productID.toString() === products.productID);
+            const isProductAlreadyAdded = cart.products.find((p) => p.productID._id.toString() === products.productID);
 
             if (isProductAlreadyAdded) {
-                isProductAlreadyAdded.quantity += products.quantity;
-                cart.totalPrice += (products.quantity*price);
+                const updatedQuantity = (isProductAlreadyAdded.quantity + products.quantity);
+                const updatedTotalCartPrice = (cart.totalPrice + (products.quantity*price));
+
+                isProductAlreadyAdded.quantity = updatedQuantity;
+                cart.totalPrice = updatedTotalCartPrice;
+
+                const updatedCart = await cart.save();
+                if (!updatedCart) return next(new ErrorHandler("Internal server error", 500));
+
+                const productForRes = {products:selectedProduct, quantity:updatedQuantity};
+                
+                sendSuccessResponse(res, "Product added to cart 1", productForRes, 201);
             }
             else{
-                cart.products.push({
-                    productID:new mongoose.Types.ObjectId(products.productID),
-                    quantity:products.quantity
-                });
-                cart.totalPrice += (products.quantity*price);
+                const findCartAndUpdate = await Cart.findByIdAndUpdate(cart._id, {
+                    $push:{
+                        products
+                    },
+                    $inc:{totalPrice:(products.quantity*price)}
+                }, {new:true}).populate("products.productID", "_id, name, brand, category, price, weight, flavor, images, size", "Product") as (Document<unknown, any, CartTypesPopulates>&CartTypesPopulates)|null;
 
+                if (!findCartAndUpdate) return next(new ErrorHandler("Internal server error", 500));
+
+                const productForRes = {products:selectedProduct, quantity:products.quantity};
+                
+                sendSuccessResponse(res, "Product added to cart 2", productForRes, 201);
             }
-            const updatedCart = await cart.save();
-            sendSuccessResponse(res, "Product added successfully", updatedCart, 201);
         }
         else{
             const totalPrice = price*products.quantity;
@@ -50,10 +64,10 @@ export async function addToCart(req:Request<{}, {}, {products:{productID:string;
             });
     
             if (!createNewCart) return next(new ErrorHandler("Internal server error", 500));
+
+            const productForRes = {products:selectedProduct, quantity:products.quantity};
             
-            const cartData = createNewCart.toObject();
-    
-            sendSuccessResponse(res, "Product added to cart", cartData, 201);
+            sendSuccessResponse(res, "Product added to cart 3", productForRes, 201);
         }
     } catch (error) {
         console.log(error);
