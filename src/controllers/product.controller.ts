@@ -1,89 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
-import Product from "../models/product.model.js";
+import Product, { ProductTypes } from "../models/product.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
 
-
-export async function createProduct(req:Request, res:Response, next:NextFunction) {
-    try {
-        const {
-            name,
-            price,
-            brand,
-            category,
-            size,
-            tag,
-            description,
-            images,
-            stock,
-            weight,
-            ingredients,
-
-            servingSize,
-            servingsPerContainer,
-            protein,
-            carbs,
-            fat,
-            calories,
-
-            rating,
-            numReviews,
-            flavor,
-            warning
-        } = req.body;
-
-        if (
-            !name ||
-            !price ||
-            !brand ||
-            !category ||
-            !size ||
-            !tag ||
-            !description ||
-            !stock ||
-            !weight ||
-            !ingredients ||
-
-            !servingSize ||
-            !servingsPerContainer ||
-            !protein ||
-            !carbs ||
-            !fat ||
-            !calories
-        ) return next(new ErrorHandler("All fields are required", 404));
-
-        const newProduct = await Product.create({
-            name,
-            price,
-            brand,
-            category,
-            size,
-            tag,
-            description,
-            stock,
-            weight,
-            ingredients,
-
-            nutritionFacts:{
-                servingSize,
-                servingsPerContainer,
-                protein,
-                carbs,
-                fat,
-                calories
-            }
-        });
-
-        if (!newProduct) return next(new ErrorHandler("Internal Server Error", 500));
-
-        const product = newProduct.toObject();
-
-        sendSuccessResponse(res, "Product created successfully", {...product}, 201);
-    } catch (error) {
-        console.log(error);
-        next(error);
-    }
-};
 
 export async function getProducts(req:Request, res:Response, next:NextFunction) {
     try {
@@ -116,34 +35,6 @@ export async function getSingleProduct(req:Request, res:Response, next:NextFunct
         next(error);
     }
 }
-
-export async function addImages(req:Request, res:Response, next:NextFunction) {
-    try {
-        const {productID} = req.body;
-
-        if (!productID) return next(new ErrorHandler("productID not found", 404));
-        if (!req.files || req.files.length === 0) return next(new ErrorHandler("no image uploaded thik hai", 400));
-
-        
-        const files = (req.files as Express.Multer.File[]);
-        const filePath = files.map((file) => `/public/${file.filename}`);
-
-        if (filePath.length === 0) return next(new ErrorHandler("files array is empty", 400));
-        
-        const selectedProduct = await Product.findByIdAndUpdate(productID, {
-            images:filePath
-        });
-        
-        if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
-
-        const product = selectedProduct.toObject();
-
-        sendSuccessResponse(res, "Images uploaded successfully", {...product}, 200);
-    } catch (error) {
-        console.log(error);
-        next(error);
-    }
-};
 
 export async function updateProduct(req:Request, res:Response, next:NextFunction) {
     try {
@@ -236,6 +127,82 @@ export async function deleteProduct(req:Request, res:Response, next:NextFunction
         if (!findProductAndDelete) return next(new ErrorHandler("Internal Server Error", 500));
 
         sendSuccessResponse(res, "Product deleted successfully", findProductAndDelete, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
+export async function addImages(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {productID} = req.body;
+
+        if (!productID) return next(new ErrorHandler("productID not found", 404));
+        if (!req.files || req.files.length === 0) return next(new ErrorHandler("no image uploaded thik hai", 400));
+
+        
+        const files = (req.files as Express.Multer.File[]);
+        const filePath = files.map((file) => `/public/${file.filename}`);
+
+        if (filePath.length === 0) return next(new ErrorHandler("files array is empty", 400));
+        
+        const selectedProduct = await Product.findByIdAndUpdate(productID, {
+            images:filePath
+        });
+        
+        if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
+
+        const product = selectedProduct.toObject();
+
+        sendSuccessResponse(res, "Images uploaded successfully", {...product}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
+export async function createProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {
+            name,
+            price,
+            brand,
+            category,
+            size,
+            weight,
+            
+            flavor,
+            warning,
+            tag
+        } = req.body;
+
+        if (
+            !name ||
+            !price ||
+            !brand ||
+            !category ||
+            !size ||
+            !tag ||
+            !weight
+        ) return next(new ErrorHandler("All fields are required", 404));
+
+        const newProduct = await Product.create({
+            name,
+            price,
+            brand,
+            category,
+            size,
+            tag,
+            weight,
+            flavor,
+            warning
+        });
+
+        if (!newProduct) return next(new ErrorHandler("Internal Server Error", 500));
+
+        const product = newProduct.toObject();
+
+        sendSuccessResponse(res, "Product created successfully", {...product}, 201);
     } catch (error) {
         console.log(error);
         next(error);

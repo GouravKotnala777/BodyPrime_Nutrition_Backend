@@ -8,18 +8,18 @@ export interface ProductTypes {
     category:"protein"|"pre-workout"|"vitamins"|"creatine"|"other";
     size:number;
     tag:string[];
-    description: string;
-    images: string[];
-    stock: number;
+    description?: string;
+    images?: string[];
+    stock?: number;
     weight?: string;
     ingredients?: string[];
     nutritionFacts?: {
         servingSize: string;
         servingsPerContainer: number;
-        protein?: number;
-        carbs?: number;
-        fat?: number;
-        calories?: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        calories: number;
     };
     rating: number;
     avgRating:number;
@@ -36,10 +36,10 @@ const productSchema = new mongoose.Schema<ProductTypes>({
       required: true,
       enum: ["protein", "pre-workout", "vitamins", "creatine", "other"],
     },
-    description: { type: String, required: true },
-    images: [{ type: String, required: true }],
+    description: { type: String },
+    images: [{ type: String }],
     price: { type: Number, required: true },
-    stock: { type: Number, required: true, default: 0 },
+    stock: { type: Number, default: 0 },
     weight: { type: String },
     flavor: { type: String },
     ingredients: [{ type: String }],
@@ -59,6 +59,9 @@ const productSchema = new mongoose.Schema<ProductTypes>({
         required:true
     },
     tag:[{
+        type:String
+    }],
+    warning:[{
         type:String
     }]
 
