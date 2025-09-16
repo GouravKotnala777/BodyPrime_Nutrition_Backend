@@ -26,12 +26,12 @@ export interface CartTypesFlatted {
 const cartSchema = new mongoose.Schema<CartTypes>({
     userID:{
         type:mongoose.Schema.Types.ObjectId,
-        rel:"User"
+        ref:"User"
     },
     products:[{
         productID:{
             type:mongoose.Schema.Types.ObjectId,
-            rel:"Product"
+            ref:"Product"
         },
         quantity:Number
     }],
