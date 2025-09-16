@@ -7,6 +7,22 @@ import { Document } from "mongoose";
 import Product from "../models/product.model.js";
 
 
+
+export async function getCart(req:Request, res:Response, next:NextFunction) {
+    try {
+        const userID = (req as AuthenticatedRequest).user.id;
+        
+        const cart = await Cart.findOne({userID}).populate({path:"products.productID", select:"_id name brand category price weight flavor images size", model:"Product"}) as (Document<unknown, any, CartTypesPopulates>&CartTypesPopulates)|null;
+        
+        if (!cart) return next(new ErrorHandler("cart not found", 404));
+        
+        sendSuccessResponse(res, "cart data fetched", cart, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
 export async function addToCart(req:Request<{}, {}, {productID:string; quantity:number;}>, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
