@@ -90,3 +90,48 @@ export async function addToCart(req:Request<{}, {}, {productID:string; quantity:
         next(error);
     }
 };
+
+export async function removeFromCart(req:Request<{}, {}, {productID:string; quantity:number;}>, res:Response, next:NextFunction) {
+    try {
+        const userID = (req as AuthenticatedRequest).user.id;
+        const products = req.body;
+        const cart = await Cart.findOne({
+            userID
+        });
+
+        if (!products.productID || !products.quantity) return next(new ErrorHandler("productID or quantity not found", 400));
+        
+        const selectedProduct = await Product.findById(products.productID);
+        
+        if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
+        
+        const price = selectedProduct.price;
+        
+        if (!cart) return next(new ErrorHandler("cart not found", 404));
+        
+        const findResult = cart.products.find((p) => p.productID.toString() === products.productID);
+        if (!findResult) return next(new ErrorHandler("findResult not found", 404));
+        
+        if (findResult.quantity-products.quantity >= 1) {
+            const updatedQuantity = (findResult.quantity-products.quantity);
+            const updatedTotalCartPrice = (cart.totalPrice - (price*products.quantity));
+            findResult.quantity = updatedQuantity;
+            cart.totalPrice = updatedTotalCartPrice;
+            await cart.save();
+            sendSuccessResponse(res, "Product removed from cart", {products:selectedProduct._id, quantity:updatedQuantity}, 201);
+        }
+        else{
+            const updatedCart = await Cart.findByIdAndUpdate(cart._id, {
+                $pull:{products:{productID:products.productID}},
+                $inc:{totalPrice:-(price*findResult.quantity)}
+            }, {new:true});
+            
+            if (!updatedCart) return next(new ErrorHandler("updatedCart not found", 404));
+
+            sendSuccessResponse(res, "Product removed from cart", {products:selectedProduct._id, quantity:0}, 201);            
+        }
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
