@@ -5,7 +5,7 @@ import { addImages, createProduct, deleteProduct, getProducts, getSingleProduct,
 const productRouter = express.Router();
 
 productRouter.route("/create_product").post(isUserAuthenticated, isUserAdmin, createProduct);
-productRouter.route("/get_products").get(isUserAuthenticated, getProducts);
+productRouter.route("/get_products").get(getProducts);
 productRouter.route("/single_product/:productID").get(isUserAuthenticated, getSingleProduct);
 productRouter.route("/add_image").post(isUserAuthenticated, isUserAdmin, upload.array("images", 4), addImages);
 productRouter.route("/update_product").put(isUserAuthenticated, isUserAdmin, updateProduct);
