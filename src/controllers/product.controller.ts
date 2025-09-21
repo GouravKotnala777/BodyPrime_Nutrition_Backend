@@ -148,13 +148,13 @@ export async function addImages(req:Request, res:Response, next:NextFunction) {
         
         const selectedProduct = await Product.findByIdAndUpdate(productID, {
             images:filePath
-        });
+        }, {new:true});
         
         if (!selectedProduct) return next(new ErrorHandler("selectedProduct not found", 404));
 
         const product = selectedProduct.toObject();
 
-        sendSuccessResponse(res, "Images uploaded successfully", {...product}, 200);
+        sendSuccessResponse(res, "Images uploaded successfully", {images:product.images||[]}, 200);
     } catch (error) {
         console.log(error);
         next(error);
