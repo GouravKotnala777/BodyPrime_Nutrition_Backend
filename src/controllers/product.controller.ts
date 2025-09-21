@@ -60,7 +60,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
             flavor,
             warning
         } = req.body;
-        const productID = req.query;
+        const {productID} = req.query;
 
         if (!name &&
             !price &&
@@ -84,7 +84,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
             !warning) return next(new ErrorHandler("Did not provide any field", 400));
         if (!productID) return next(new ErrorHandler("ProductID not found", 404));
 
-        const findProductAndUpdate = Product.findByIdAndUpdate(productID, {
+        const findProductAndUpdate = await Product.findByIdAndUpdate(productID, {
             ...(name&&{name}),
             ...(price&&{price}),
             ...(brand&&{brand}),
@@ -109,7 +109,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
         
         if (!findProductAndUpdate) return next(new ErrorHandler("Internal Server Error", 500));
 
-        sendSuccessResponse(res, "Product pdated successfully", {...findProductAndUpdate}, 200);
+        sendSuccessResponse(res, "Product pdated successfully", findProductAndUpdate, 200);
     } catch (error) {
         console.log(error);
         next(error);
