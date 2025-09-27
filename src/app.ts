@@ -9,6 +9,7 @@ import reviewRouter from "./routes/review.router.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import cartRouter from "./routes/cart.router.js";
+import orderRouter from "./routes/order.router.js";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/product", productRouter);
 app.use("/api/v1/review", reviewRouter);
 app.use("/api/v1/cart", cartRouter);
+app.use("/api/v1/order", orderRouter);
 
 app.use(errorMiddleware);
 
