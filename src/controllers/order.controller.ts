@@ -43,8 +43,7 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
             phone,
             method, transactionID, status,
             itemsPrice, taxPrice, shippingPrice, discount, totalPrice,
-            orderStatus,
-            deliveredAt
+            orderStatus
         }:{
             products:{
                 productID:string;
@@ -65,7 +64,7 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
             !address || !city || !state || !country || !pincode ||
             !phone ||
             !method || !status ||
-            !itemsPrice || !taxPrice || !shippingPrice || !discount || !totalPrice ||
+            !itemsPrice || !totalPrice ||
             !orderStatus
         ) return next(new ErrorHandler("All fields are required", 400));
 
@@ -77,8 +76,7 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
             orderStatus:"pending",
             paymentInfo:{method, transactionID, status},
             priceSummary:{itemsPrice, taxPrice, shippingPrice, discount, totalPrice},
-            shippingInfo:{address, city, state, country, pincode, phone},
-            deliveredAt
+            shippingInfo:{address, city, state, country, pincode, phone}
         });
 
         if (!newOrder) return next(new Error("Internal server error"));
