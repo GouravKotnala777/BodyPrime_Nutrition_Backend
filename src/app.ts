@@ -1,6 +1,5 @@
 import express from "express";
 import userRouter from "./routes/user.router.js";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleware } from "./middlewares/middlewares.js";
@@ -10,7 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cartRouter from "./routes/cart.router.js";
 import orderRouter from "./routes/order.router.js";
-
+import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();

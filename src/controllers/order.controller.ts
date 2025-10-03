@@ -3,6 +3,7 @@ import { sendSuccessResponse } from "../utils/functions.js";
 import Order from "../models/order.model.js";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { ErrorHandler } from "../utils/classes.js";
+import Stripe from "stripe";
 
 interface OrderRequestType extends AuthenticatedRequest  {
     products: {
@@ -37,6 +38,9 @@ interface OrderRequestType extends AuthenticatedRequest  {
 
 export async function createOrder(req:Request, res:Response, next:NextFunction) {
     try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+            apiVersion:"2025-08-27.basil"
+        });
         const {
             products,
             address, city, state, country, pincode,
@@ -70,6 +74,17 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
 
         const userID = (req as AuthenticatedRequest).user.id;
 
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount:Math.round(totalPrice*100),
+            currency:"inr",
+            automatic_payment_methods:{enabled:true}
+        });
+
+        if (paymentIntent.status === "canceled") {
+            return next(new ErrorHandler("Payment was canceled", 400));
+        };
+
         const newOrder = await Order.create({
             userID,
             products,
@@ -81,7 +96,7 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
 
         if (!newOrder) return next(new Error("Internal server error"));
                 
-        sendSuccessResponse(res, "Order successfull", newOrder, 201);
+        sendSuccessResponse(res, "Order successfull", {clientSecret:paymentIntent.client_secret, newOrder}, 201);
     } catch (error) {
         console.log(error);
         next(error);        
