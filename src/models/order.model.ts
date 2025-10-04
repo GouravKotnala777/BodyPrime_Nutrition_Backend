@@ -1,6 +1,7 @@
 import mongoose, { Model } from "mongoose";
 import { ProductTypes } from "./product.model.js";
 
+export type PaymentStatusType = "canceled"|"processing"|"requires_action"|"requires_capture"|"requires_confirmation"|"requires_payment_method"|"succeeded"|"refunded";
 export interface OrderTypes {
     userID: mongoose.Types.ObjectId;
     products: {
@@ -20,7 +21,9 @@ export interface OrderTypes {
     paymentInfo: {
         method: "COD" | "Stripe";
         transactionID?: string;
-        status: "pending" | "paid" | "failed" | "refunded";
+        status:PaymentStatusType;
+        message?:string;
+        error?:string;
     };
     priceSummary: {
         itemsPrice: number;
@@ -53,7 +56,9 @@ export interface OrderTypesPopulates {
     paymentInfo: {
         method: "COD" | "Stripe";
         transactionID?: string;
-        status: "pending" | "paid" | "failed" | "refunded";
+        status:PaymentStatusType;
+        message?:string;
+        error?:string;
     };
     priceSummary: {
         itemsPrice: number;
@@ -103,8 +108,11 @@ const orderSchema = new mongoose.Schema<OrderTypes>({
         transactionID:String,
         status:{
             type:String,
-            enum:["pending", "paid", "failed", "refunded"]
-        }
+            enum:["canceled", "processing", "requires_action", "requires_capture", "requires_confirmation", "requires_payment_method", "succeeded", "refunded", "refunded"],
+            default:"processing"
+        },
+        message:String,
+        error:String,
     },
     priceSummary:{
         itemsPrice:Number,

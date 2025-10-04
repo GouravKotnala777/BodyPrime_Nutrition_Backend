@@ -75,15 +75,18 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
         const userID = (req as AuthenticatedRequest).user.id;
 
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount:Math.round(totalPrice*100),
-            currency:"inr",
-            automatic_payment_methods:{enabled:true}
-        });
-
-        if (paymentIntent.status === "canceled") {
-            return next(new ErrorHandler("Payment was canceled", 400));
-        };
+        let paymentIntent:Stripe.Response<Stripe.PaymentIntent>|null = null;
+        if (method === "Stripe") {
+            paymentIntent = await stripe.paymentIntents.create({
+                amount:Math.round(totalPrice*100),
+                currency:"inr",
+                automatic_payment_methods:{enabled:true}
+            });
+    
+            if (paymentIntent.status === "canceled") {
+                return next(new ErrorHandler("Payment was canceled", 400));
+            };
+        }
 
         const newOrder = await Order.create({
             userID,
@@ -96,9 +99,35 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
 
         if (!newOrder) return next(new Error("Internal server error"));
                 
-        sendSuccessResponse(res, "Order successfull", {clientSecret:paymentIntent.client_secret, newOrder}, 201);
+        sendSuccessResponse(res, "Order successfull", {clientSecret:paymentIntent?.client_secret, newOrder}, 201);
     } catch (error) {
         console.log(error);
         next(error);        
     }
-}
+};
+
+export async function updateOrder(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {orderID} = req.query;
+        const {transactionID, status, message, error} = req.body;
+
+        console.log({orderID, transactionID, status, message, error});
+        
+
+        if (!orderID) return next(new ErrorHandler("OrderID not found", 404));
+
+        const findOrderByIdAndUpdate = await Order.findByIdAndUpdate(orderID, {
+            ...(transactionID&&{"paymentInfo.transactionID":transactionID}),
+            ...(status&&{"paymentInfo.status":status}),
+            ...(message&&{"paymentInfo.message":message}),
+            ...(error&&{"paymentInfo.error":error})
+        });
+
+        if (!findOrderByIdAndUpdate) return next(new ErrorHandler("Internal server error", 500));
+
+        sendSuccessResponse(res, "order updated for success", {orderID, method:"Stripe", transactionID, status, message, error}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
