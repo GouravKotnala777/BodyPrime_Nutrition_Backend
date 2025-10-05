@@ -10,7 +10,7 @@ userRouter.route("/my_profile").get(isUserAuthenticated, myProfile);
 userRouter.route("/update_profile").put(isUserAuthenticated, updateMyProfile);
 userRouter.route("/forget_password").post(forgetPassword);
 userRouter.route("/reset_password").put(resetPassword);
-userRouter.route("/email_verification").put(verifyEmail);
+userRouter.route("/verify_email").post(verifyEmail);
 userRouter.route("/logout").post(isUserAuthenticated, logout);
 
 userRouter.route("/all_users").get(isUserAuthenticated, isUserAdmin, getAllUsers)

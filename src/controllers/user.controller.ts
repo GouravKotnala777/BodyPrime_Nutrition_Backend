@@ -3,7 +3,6 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { ErrorHandler } from "../utils/classes.js";
 import { generateJWTToken, hashPassword, sendEmail, sendSuccessResponse, verifyJWTToken } from "../utils/functions.js";
-import JsonWebToken from "jsonwebtoken";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 
 
@@ -43,11 +42,13 @@ export async function register(req:Request, res:Response, next:NextFunction) {
                     </head>
                     <body>
                         <h1>Click on this link</h1>
-                        <p>http://localhost:8000/user/email_verification?email_verification_token=${emailVerificationToken}</p>
+                        <p>${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}</p>
                     </body>
                 </html>
             `
         });
+
+        if (sendEmailRes.rejected.length !== 0) return next(new ErrorHandler("rejected" + sendEmailRes.rejected[0] as string, 403));
 
         // transform user object password free for response we also set this in userModel using toJSON method
         const {password:_, ...userData} = newUser.toObject();
@@ -78,23 +79,22 @@ export async function login(req:Request, res:Response, next:NextFunction){
         
         // transform user object password free for response
         const {password:_, ...loginedUser } = isUserExist.toObject();
-
+        
         if (isUserExist.isVerified) {
             const newToken = await generateJWTToken({payload:{id:loginedUser._id}, secret:JWT_SECRET, options:{expiresIn:"3d"}});
             
             res.cookie("token", newToken, {httpOnly:NODE_ENV === "producton", secure:NODE_ENV === "producton", sameSite:"none", maxAge:1000*60*60*24*3});
-    
             sendSuccessResponse(res, "login successfull", loginedUser, 200);
         }
         else{
             // generate emailVerificationToken for email verification
             if (!JWT_SECRET) return next(new ErrorHandler("JWT_SECRET not found", 404));
             const emailVerificationToken = await generateJWTToken({payload:{email}, secret:JWT_SECRET, options:{expiresIn:"1h"}});
-
+            
             isUserExist.emailVerificationToken = emailVerificationToken;
             isUserExist.emailVerificationTokenExpire = Date.now() + 90000;
             await isUserExist.save();
-
+            
             //====================
             const sendEmailRes = await sendEmail({
                 to:email,
@@ -107,17 +107,16 @@ export async function login(req:Request, res:Response, next:NextFunction){
                         </head>
                         <body>
                             <h1>Click on this link</h1>
-                            <p>http://localhost:8000/user/email_verification?email_verification_token=${emailVerificationToken}</p>
+                            <p>${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}</p>
                         </body>
                     </html>
                 `
             });
 
-            if (sendEmailRes.rejected) return next(new ErrorHandler(sendEmailRes.rejected[0] as string, 403));
-        
-            sendSuccessResponse(res, "Verification link has sent to your email", sendEmailRes, 200);
-        }
+            if (sendEmailRes.rejected.length !== 0) return next(new ErrorHandler("rejected" + sendEmailRes.rejected[0] as string, 403));
 
+            sendSuccessResponse(res, "Verification link has sent to your email", sendEmailRes, 200);
+        }        
     } catch (error) {
         console.log(error);
         next(error);
