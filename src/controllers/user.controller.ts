@@ -36,13 +36,34 @@ export async function register(req:Request, res:Response, next:NextFunction) {
             subject:"email verification",
             text:"patoni kya chal ro hai",
             html:`
+                <!DOCTYPE html>
                 <html>
-                    <head>
-                        <title></title>
-                    </head>
-                    <body>
-                        <h1>Click on this link</h1>
-                        <p>${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}</p>
+                    <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+                    <table width="100%" style="max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px;">
+                        <tr>
+                        <td style="text-align: center;">
+                            <h2 style="color: #333;">Verify Your Email Address</h2>
+                            <p style="color: #555; font-size: 16px;">
+                            Hello <strong>${newUser.name}</strong>,<br><br>
+                            Thank you for signing up with <strong>BodyPrime Nutrition</strong>.<br>
+                            Please confirm your email address by clicking the button below:
+                            </p>
+                            <p style="margin: 30px 0;">
+                            <a href="${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}" style="background-color: #ff4b69; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px;">
+                                Verify Email
+                            </a>
+                            </p>
+                            <p style="color: #777; font-size: 14px;">
+                            This link will expire in 15 minutes.<br>
+                            If you did not sign up, you can safely ignore this email.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                            <p style="font-size: 12px; color: #aaa;">
+                            &copy; ${2025} BodyPrime Nutrition. All rights reserved.
+                            </p>
+                        </td>
+                        </tr>
+                    </table>
                     </body>
                 </html>
             `
@@ -101,13 +122,34 @@ export async function login(req:Request, res:Response, next:NextFunction){
                 subject:"email verification",
                 text:"patoni kya chal ro hai",
                 html:`
+                    <!DOCTYPE html>
                     <html>
-                        <head>
-                            <title></title>
-                        </head>
-                        <body>
-                            <h1>Click on this link</h1>
-                            <p>${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}</p>
+                        <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+                        <table width="100%" style="max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px;">
+                            <tr>
+                            <td style="text-align: center;">
+                                <h2 style="color: #333;">Verify Your Email Address</h2>
+                                <p style="color: #555; font-size: 16px;">
+                                Hello <strong>${isUserExist.name}</strong>,<br><br>
+                                Thank you for signing up with <strong>BodyPrime Nutrition</strong>.<br>
+                                Please confirm your email address by clicking the button below:
+                                </p>
+                                <p style="margin: 30px 0;">
+                                <a href="${process.env.CLIENT_URL}/verify_email/${emailVerificationToken}" style="background-color: #ff4b69; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px;">
+                                    Verify Email
+                                </a>
+                                </p>
+                                <p style="color: #777; font-size: 14px;">
+                                This link will expire in 15 minutes.<br>
+                                If you did not sign up, you can safely ignore this email.
+                                </p>
+                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                                <p style="font-size: 12px; color: #aaa;">
+                                &copy; ${2025} BodyPrime Nutrition. All rights reserved.
+                                </p>
+                            </td>
+                            </tr>
+                        </table>
                         </body>
                     </html>
                 `
