@@ -3,6 +3,7 @@ import { ErrorHandler } from "./classes.js";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 import jsonWebToken, { JwtPayload, SignOptions } from "jsonwebtoken";
+import * as brevo from "@getbrevo/brevo";
 
 interface SendEmailOptionsTypes{
     to:string;
@@ -15,7 +16,7 @@ export function sendSuccessResponse(res:Response, message:string, jsonData:{}, s
     res.status(statusCode).json({success:true, message, jsonData:jsonData});
 };
 
-export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes){
+export async function sendEmails({to, subject, text, html}:SendEmailOptionsTypes){
     try {
         const transporter = nodemailer.createTransport({
             host:process.env.TRANSPORTER_HOST,
@@ -65,6 +66,42 @@ export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes)
         throw new ErrorHandler("this error is from function.ts > sendEmail", 500);
     }
 };
+
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}) {
+  try {
+    const apiInstance = new brevo.TransactionalEmailsApi();
+    apiInstance.setApiKey(
+      brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.BREVO_API_KEY as string
+    );
+
+    const sendSmtpEmail = {
+      sender: { name: "BodyPrime Nutrition", email: "no-reply@bodyprime.com" },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      htmlContent: html,
+    };
+
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email sent:", response);
+
+    return response;
+  } catch (error) {
+    console.error("❌ Brevo send email error:", error);
+    throw error;
+  }
+}
 
 export async function generateRandomCode(length:number=6){
     try {

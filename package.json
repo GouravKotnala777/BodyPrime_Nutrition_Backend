@@ -11,16 +11,19 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@types/stripe": "^8.0.416",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
+    "npm": "^11.6.1",
     "stripe": "^18.5.0"
   },
   "devDependencies": {
