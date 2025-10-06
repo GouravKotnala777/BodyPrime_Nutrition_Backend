@@ -20,11 +20,26 @@ export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes)
         const transporter = nodemailer.createTransport({
             host:process.env.TRANSPORTER_HOST,
             port:Number(process.env.TRANSPORTER_PORT),
-            secure:false,
+            secure:true,
             auth:{
                 user:process.env.TRANSPORTER_ID,
                 pass:process.env.TRANSPORTER_PASS,
             },
+        });
+
+        console.log({
+            host: process.env.TRANSPORTER_HOST,
+            id: process.env.TRANSPORTER_ID,
+            port: process.env.TRANSPORTER_PORT,
+            pass: process.env.TRANSPORTER_PASS ? "loaded" : "missing"
+        });
+
+        transporter.verify((error, success) => {
+            if (error) {
+                console.error("SMTP connection failed:", error);
+            } else {
+                console.log("SMTP ready:", success);
+            }
         });
 
         // Email Options
@@ -39,6 +54,8 @@ export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes)
         //Send Mail
         const sendEmailRes = await transporter.sendMail(mailOptions);
 
+        console.log({sendEmail});
+        
         console.log("Email sent successfully");
 
         return sendEmailRes;
