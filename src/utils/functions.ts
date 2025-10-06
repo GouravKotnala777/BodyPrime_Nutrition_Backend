@@ -20,7 +20,7 @@ export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes)
         const transporter = nodemailer.createTransport({
             host:process.env.TRANSPORTER_HOST,
             port:Number(process.env.TRANSPORTER_PORT),
-            secure:true,
+            secure:false,
             auth:{
                 user:process.env.TRANSPORTER_ID,
                 pass:process.env.TRANSPORTER_PASS,
