@@ -11,7 +11,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@getbrevo/brevo": "^3.0.1",
     "@types/stripe": "^8.0.416",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
