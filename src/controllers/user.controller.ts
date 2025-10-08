@@ -69,11 +69,9 @@ export async function register(req:Request, res:Response, next:NextFunction) {
             `
         });
 
-        //if (sendEmailRes.rejected.length !== 0) return next(new ErrorHandler("rejected" + sendEmailRes.rejected[0] as string, 403));
+        console.log({sendEmailRes});
+        if (!sendEmailRes) return next(new ErrorHandler("Email not sent", 403));
 
-        console.log(sendEmailRes);
-        
-        // transform user object password free for response we also set this in userModel using toJSON method
         const {password:_, ...userData} = newUser.toObject();
     
         sendSuccessResponse(res, "Verification link has sent to your email", userData, 201);
@@ -157,9 +155,9 @@ export async function login(req:Request, res:Response, next:NextFunction){
                 `
             });
 
-            //if (sendEmailRes.rejected.length !== 0) return next(new ErrorHandler("rejected" + sendEmailRes.rejected[0] as string, 403));
+            console.log({sendEmailRes});
+            if (!sendEmailRes) return next(new ErrorHandler("Email not sent", 403));
 
-            console.log(sendEmailRes);
             
             sendSuccessResponse(res, "Verification link has sent to your email", sendEmailRes, 200);
         }        

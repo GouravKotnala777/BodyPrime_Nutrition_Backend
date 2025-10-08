@@ -1,6 +1,5 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { ErrorHandler } from "./classes.js";
-import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 import jsonWebToken, { JwtPayload, SignOptions } from "jsonwebtoken";
 
@@ -17,49 +16,41 @@ export function sendSuccessResponse(res:Response, message:string, jsonData:{}, s
 
 export async function sendEmail({to, subject, text, html}:SendEmailOptionsTypes){
     try {
-        const transporter = nodemailer.createTransport({
-            host:process.env.TRANSPORTER_HOST,
-            //port:Number(process.env.TRANSPORTER_PORT),
-            secure:true,
-            auth:{
-                user:process.env.TRANSPORTER_ID,
-                pass:process.env.TRANSPORTER_PASS,
+        if (!process.env.BREVO_KEY) throw new ErrorHandler("BREVO_KEY not found", 404);
+        if (!process.env.BREVO_URL) throw new ErrorHandler("BREVO_URL not found", 404);
+        if (!process.env.BREVO_USER_NAME) throw new ErrorHandler("BREVO_USER_NAME not found", 404);
+        if (!process.env.BREVO_EMAIL_ID) throw new ErrorHandler("BREVO_EMAIL_ID not found", 404);
+
+        const res = await fetch(process.env.BREVO_URL, {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "api-key":process.env.BREVO_KEY
             },
+            body:JSON.stringify({
+                sender:{
+                    "name":process.env.BREVO_USER_NAME,
+                    "email":process.env.BREVO_EMAIL_ID
+                },
+                to:[{
+                    "email":to
+                }],
+                subject,
+                textContent:text,
+                htmlContent:html
+            })
         });
+        const data = await res.json();
+        console.log({data});
 
-        console.log({
-            host: process.env.TRANSPORTER_HOST,
-            id: process.env.TRANSPORTER_ID,
-            port: process.env.TRANSPORTER_PORT,
-            pass: process.env.TRANSPORTER_PASS ? "loaded" : "missing"
-        });
+        if (res.ok && data.messageId) {
+            console.log("Email sent successfully:", data.messageId);
+        }
+        else{
+            console.error("Failed to send email:", data);
+        }
 
-        transporter.verify((error, success) => {
-            if (error) {
-                console.error("SMTP connection failed:", error);
-            } else {
-                console.log("SMTP ready:", success);
-            }
-        });
-
-        // Email Options
-        const mailOptions = {
-            from:`"BodyPrime Nutrition" <${process.env.TRANSPORTER_ID}>`,
-            to,
-            subject,
-            text,
-            html
-        };
-
-        //Send Mail
-        const sendEmailRes = await transporter.sendMail(mailOptions);
-
-        console.log({sendEmail});
-        
-        console.log("Email sent successfully");
-
-        return sendEmailRes;
-        
+        return data.messageId?true:false;
     } catch (error) {
         console.log("mail bhejne par error aa gayi", error);
         throw new ErrorHandler("this error is from function.ts > sendEmail", 500);
