@@ -226,11 +226,11 @@ export async function forgetPassword(req:Request, res:Response, next:NextFunctio
             html:`
             <html>
                 <head>
-                    <title></title>
+                    <title>Reset Password</title>
                 </head>
                 <body>
                     <h1>Click on this link</h1>
-                    <p>http://localhost:8000/user/reset_password?reset_password_token=${resetPasswordToken}</p>
+                    <p>${process.env.CLIENT_URL}/user/reset_password?reset_password_token=${resetPasswordToken}</p>
                 </body>
             </html>
             `
@@ -243,7 +243,7 @@ export async function forgetPassword(req:Request, res:Response, next:NextFunctio
         console.log(error);
         next(error);        
     }
-}
+};
 
 export async function resetPassword(req:Request, res:Response, next:NextFunction){
     try {
