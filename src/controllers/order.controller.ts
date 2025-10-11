@@ -36,6 +36,25 @@ interface OrderRequestType extends AuthenticatedRequest  {
     deliveredAt?: Date;
 };
 
+
+export async function myOrders(req:Request, res:Response, next:NextFunction) {
+    try {
+        const userID = (req as AuthenticatedRequest).user.id;
+        
+        const myOrders = await Order.find({
+            userID
+        });
+
+
+        //if (myOrders) return next(new Error("Internal server error"));
+                
+        sendSuccessResponse(res, "My orders", myOrders, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
+};
+
 export async function createOrder(req:Request, res:Response, next:NextFunction) {
     try {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
