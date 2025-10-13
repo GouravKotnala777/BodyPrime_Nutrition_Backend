@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { sendSuccessResponse } from "../utils/functions.js";
-import Order from "../models/order.model.js";
+import Order, { PaymentStatusType } from "../models/order.model.js";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { ErrorHandler } from "../utils/classes.js";
 import Stripe from "stripe";
+import Cart from "../models/cart.model.js";
 
 interface OrderRequestType extends AuthenticatedRequest  {
     products: {
@@ -125,13 +126,10 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
     }
 };
 
-export async function updateOrder(req:Request, res:Response, next:NextFunction) {
+export async function updateOrder(req:Request<{},{},{transactionID:string; status:PaymentStatusType; message:string|null; error?:string;}>, res:Response, next:NextFunction) {
     try {
         const {orderID} = req.query;
         const {transactionID, status, message, error} = req.body;
-
-        console.log({orderID, transactionID, status, message, error});
-        
 
         if (!orderID) return next(new ErrorHandler("OrderID not found", 404));
 
@@ -143,6 +141,12 @@ export async function updateOrder(req:Request, res:Response, next:NextFunction) 
         });
 
         if (!findOrderByIdAndUpdate) return next(new ErrorHandler("Internal server error", 500));
+
+        if (status === "succeeded") {
+            await Cart.findOneAndUpdate({
+                userID:findOrderByIdAndUpdate.userID
+            }, {products:[], totalPrice:0});
+        }
 
         sendSuccessResponse(res, "order updated for success", {orderID, method:"Stripe", transactionID, status, message, error}, 201);
     } catch (error) {
