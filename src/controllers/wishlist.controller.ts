@@ -5,6 +5,20 @@ import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { sendSuccessResponse } from "../utils/functions.js";
 
 
+export async function getWishlist(req:Request, res:Response, next:NextFunction) {
+    try {
+        const userID = (req as AuthenticatedRequest).user.id;
+        
+        const myWishlist = await Wishlist.findOne({userID}).populate({path:"products", model:"Product", select:"_id name category brand price images"});
+        if (!myWishlist) return next(new ErrorHandler("Internal Server Error", 500));
+
+        sendSuccessResponse(res, "", myWishlist.products, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
 export async function addToWishlist(req:Request, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
