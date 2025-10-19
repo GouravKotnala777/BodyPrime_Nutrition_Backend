@@ -19,6 +19,45 @@ export async function getProducts(req:Request, res:Response, next:NextFunction) 
     }
 };
 
+export async function searchProducts(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {searchQuery} = req.query;
+
+        if (!searchQuery || typeof searchQuery !== "string") {
+            return next(new ErrorHandler("searchQuery is required", 400));
+        }
+
+        const [names, categories, brands, tags] = await Promise.all([
+            Product.find({
+                name:{
+                    $regex:searchQuery,
+                    $options:"i"
+                }
+            }),
+            Product.find({
+                category:{
+                    $regex:searchQuery,
+                    $options:"i"
+                }
+            }),
+            Product.find({
+                brand:{
+                    $regex:searchQuery,
+                    $options:"i"
+                }
+            }),
+            Product.find({
+                tag:{$in:[searchQuery]}
+            })
+        ]);
+
+        sendSuccessResponse(res, "", {names, categories, brands, tags}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
 export async function getSingleProduct(req:Request, res:Response, next:NextFunction) {
     try {
         const {productID} = req.params;
