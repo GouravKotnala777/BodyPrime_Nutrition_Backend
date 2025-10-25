@@ -33,22 +33,22 @@ export async function searchProducts(req:Request, res:Response, next:NextFunctio
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }),
+            }).select("_id name name"),
             Product.find({
                 category:{
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }),
+            }).select("_id name category"),
             Product.find({
                 brand:{
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }),
+            }).select("_id name brand"),
             Product.find({
                 tag:{$in:[searchQuery]}
-            })
+            }).select("_id name tag")
         ]);
 
         sendSuccessResponse(res, "", {names, categories, brands, tags}, 200);
