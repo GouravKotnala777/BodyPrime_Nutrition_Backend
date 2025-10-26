@@ -4,12 +4,22 @@ import Product, { ProductTypes } from "../models/product.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
 
 
-export async function getProducts(req:Request, res:Response, next:NextFunction) {
+export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"; searchQuery:string;}>, res:Response, next:NextFunction) {
     try {
-        const limit = 2;
-        const {skip=0} = req.query;
+        const limit = 1;
+        const {skip=0, searchField, searchQuery} = req.query;
 
-        const allProducts = await Product.find().skip(Number(skip)*limit).limit(limit);
+        const findWith = (!searchField||!searchQuery) ?
+            {}
+            :
+            {[searchField]:{
+                $regex:searchQuery,
+                $options:"i"
+            }};
+
+        const allProducts = await Product.find(findWith)
+        .skip(Number(skip)*limit)
+        .limit(limit);
 
         const resMessage = (allProducts.length === 0) ? "No product yet!" : "All products";
         sendSuccessResponse(res, resMessage, allProducts, 200);
@@ -33,22 +43,22 @@ export async function searchProducts(req:Request, res:Response, next:NextFunctio
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }).select("_id name name"),
+            }).select("_id name brand category"),
             Product.find({
                 category:{
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }).select("_id name category"),
+            }).select("_id name brand category"),
             Product.find({
                 brand:{
                     $regex:searchQuery,
                     $options:"i"
                 }
-            }).select("_id name brand"),
+            }).select("_id name brand category"),
             Product.find({
                 tag:{$in:[searchQuery]}
-            }).select("_id name tag")
+            }).select("_id name brand category tag")
         ]);
 
         sendSuccessResponse(res, "", {names, categories, brands, tags}, 200);
