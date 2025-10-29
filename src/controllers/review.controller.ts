@@ -4,6 +4,7 @@ import { ErrorHandler } from "../utils/classes.js";
 import Review from "../models/review.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
 import Product from "../models/product.model.js";
+import Order from "../models/order.model.js";
 
 
 export async function createReview(req:Request, res:Response, next:NextFunction) {
@@ -16,11 +17,15 @@ export async function createReview(req:Request, res:Response, next:NextFunction)
         if (!userID) return next(new ErrorHandler("userID not found", 404));
         if (!productID) return next(new ErrorHandler("productID not found", 404));
         
-        
-        
         const isReviewExist = await Review.findOne({
             userID, productID
         });
+
+        const isVerifiedPurchase = !!(await Order.exists({
+            userID,
+            "products.productID":{$in:[productID]},
+            orderStatus:"delivered"
+        }));
         
         if (isReviewExist) {
             const oldRating = isReviewExist.rating;
@@ -28,6 +33,7 @@ export async function createReview(req:Request, res:Response, next:NextFunction)
 
             isReviewExist.rating = rating;
             isReviewExist.comment = (comment||isReviewExist.comment);
+            isReviewExist.isVerifiedPurchase = isVerifiedPurchase;
             
             const findProductAndUpdate = await Product.findByIdAndUpdate(productID, [{
                 $set:{
@@ -48,7 +54,7 @@ export async function createReview(req:Request, res:Response, next:NextFunction)
         }
         else{
             const newReview = await Review.create({
-                userID, productID, rating, comment
+                userID, productID, rating, comment, isVerifiedPurchase
             });
 
             if (!newReview) return next(new ErrorHandler("Internal Server Error", 500));

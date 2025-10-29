@@ -7,6 +7,7 @@ export interface ReviewTypes{
     userID:mongoose.Schema.Types.ObjectId;
     rating:number;
     comment:string;
+    isVerifiedPurchase:boolean;
     createdAt:string;
     updatedAt:string;
 };
@@ -28,6 +29,10 @@ const reviewSchema = new mongoose.Schema<ReviewTypes>({
     comment:{
         type:String,
         maxLength:100
+    },
+    isVerifiedPurchase:{
+        type:Boolean,
+        default:false
     }
 }, {timestamps:true});
 
