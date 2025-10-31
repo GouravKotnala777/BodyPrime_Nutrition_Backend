@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { sendSuccessResponse } from "../utils/functions.js";
-import Order, { PaymentStatusType } from "../models/order.model.js";
+import { generateRandomCode, sendEmail, sendSuccessResponse } from "../utils/functions.js";
+import Order, { OrderTypesPopulates, PaymentStatusType } from "../models/order.model.js";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { ErrorHandler } from "../utils/classes.js";
 import Stripe from "stripe";
 import Cart from "../models/cart.model.js";
+import { Document } from "mongoose";
 
 interface OrderRequestType extends AuthenticatedRequest  {
     products: {
@@ -37,6 +38,123 @@ interface OrderRequestType extends AuthenticatedRequest  {
     deliveredAt?: Date;
 };
 
+export async function allOrders(req:Request, res:Response, next:NextFunction) {
+    try {
+        const [pending, processing, shipped, delivered, cancelled] = await Promise.all([
+            Order.find({
+                orderStatus:"pending"
+            }).sort({updatedAt:-1}),
+            Order.find({
+                orderStatus:"processing"
+            }).sort({updatedAt:-1}),
+            Order.find({
+                orderStatus:"shipped"
+            }).sort({updatedAt:-1}),
+            Order.find({
+                orderStatus:"delivered"
+            }).sort({updatedAt:-1}),
+            Order.find({
+                orderStatus:"cancelled"
+            }).sort({updatedAt:-1})
+        ]);
+
+        sendSuccessResponse(res, "All orders", {pending, processing, shipped, delivered, cancelled}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
+};
+
+export async function sendDeliveryConfirmation(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {orderID} = req.body;
+
+        if (!orderID) return next(new ErrorHandler("orderID not found", 404));
+        
+        const selectedOrder = await Order.findById(orderID).populate({path:"userID", model:"User", select:"_id name email mobile"}) as (Document<unknown, {}, OrderTypesPopulates>&OrderTypesPopulates) |null;
+        
+        if (!selectedOrder) return next(new ErrorHandler("order not found", 404));
+
+        const OTP = await generateRandomCode(6);
+
+        const emailRes = await sendEmail({
+            to:selectedOrder.userID.email,
+            subject:"OTP for order delivery confirmation",
+            html:`
+                <html>
+                    <head><title>delivery confirmation</title></head>
+                    <body>
+                        <h1>OTP for order delivery confirmation</h1>
+                        <p>${OTP}</p>
+                    </body>
+                </html>
+            `,
+            text:"sdfghjkl"
+        });
+
+        if (!emailRes) return next(new ErrorHandler("email not sent", 500));
+        
+        //selectedOrder.otp = OTP;
+        //await selectedOrder.save();
+
+        const updateOrder = await Order.findByIdAndUpdate(orderID, {
+            otp:OTP,
+            otpExpiryTime:new Date(Date.now()+1000*60*1)
+        });
+        
+        if (!updateOrder) return next(new ErrorHandler("Internal Server Error", 500));
+
+        sendSuccessResponse(res, "email has been sended", {}, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
+};
+
+export async function verifyDeliveryConfirmation(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {orderID, otp} = req.body;
+
+        if (!orderID) return next(new ErrorHandler("orderID not found", 404));
+        if (!otp) return next(new ErrorHandler("OTP not found", 404));
+        
+        const selectedOrder = await Order.findOne({
+            _id:orderID,
+            otp,
+            otpExpiryTime:{$gte:new Date()}
+        }).populate({path:"userID", model:"User", select:"_id name email mobile"}) as (Document<unknown, {}, OrderTypesPopulates>&OrderTypesPopulates) |null;
+        
+        if (!selectedOrder) return next(new ErrorHandler("order not found", 404));
+        
+        selectedOrder.otp = "";
+        selectedOrder.otpExpiryTime = null;
+        selectedOrder.orderStatus = "delivered";
+        selectedOrder.deliveredAt = new Date();
+        const updatedOrder = await selectedOrder.save();
+        
+        if (!updatedOrder) return next(new ErrorHandler("Internal Server Error", 500));
+        
+        const emailRes = await sendEmail({
+            to:selectedOrder.userID.email,
+            subject:"Thanks for using our service",
+            html:`
+                <html>
+                    <head><title>Thanks message</title></head>
+                    <body>
+                        <h1>Thanks for using our service</h1>
+                        <p>Enjoy your meal</p>
+                    </body>
+                </html>
+            `,
+            text:"sdfghjkl"
+        });
+
+        sendSuccessResponse(res, "Order confirmation success", {}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);        
+    }
+};
 
 export async function myOrders(req:Request, res:Response, next:NextFunction) {
     try {

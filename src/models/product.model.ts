@@ -26,6 +26,8 @@ export interface ProductTypes {
     numReviews: number;
     flavor?:string;
     warning?:string[];
+    soldCount:number;
+    returnCount:number;
 };
 
 const productSchema = new mongoose.Schema<ProductTypes>({
@@ -63,7 +65,15 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     }],
     warning:[{
         type:String
-    }]
+    }],
+    soldCount:{
+        type:Number,
+        default:0
+    },
+    returnCount:{
+        type:Number,
+        default:0
+    }
 
 }, {
     timestamps:true

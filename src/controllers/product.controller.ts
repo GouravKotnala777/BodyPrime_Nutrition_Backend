@@ -4,7 +4,7 @@ import Product, { ProductTypes } from "../models/product.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
 
 
-export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"; searchQuery:string;}>, res:Response, next:NextFunction) {
+export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"|"soldCount"|"returnCount"; searchQuery:string;}>, res:Response, next:NextFunction) {
     try {
         const limit = 1;
         const {skip=0, searchField, searchQuery} = req.query;
@@ -12,14 +12,18 @@ export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchFi
         const findWith = (!searchField||!searchQuery) ?
             {}
             :
-            {[searchField]:{
-                $regex:searchQuery,
-                $options:"i"
-            }};
+            //(searchField === "soldCount") ?
+            //    {}
+            //    :
+                {[searchField]:{
+                    $regex:searchQuery,
+                    $options:"i"
+                }};
 
         const allProducts = await Product.find(findWith)
         .skip(Number(skip)*limit)
-        .limit(limit);
+        .limit(limit)
+        .sort({...(searchField==="soldCount"&&{soldCount:-1})});
 
         const resMessage = (allProducts.length === 0) ? "No product yet!" : "All products";
         sendSuccessResponse(res, resMessage, allProducts, 200);

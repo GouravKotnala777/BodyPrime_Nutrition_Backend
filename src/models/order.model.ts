@@ -34,11 +34,18 @@ export interface OrderTypes {
     };
     orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
     deliveredAt?: Date;
+    otp?:string;
+    otpExpiryTime:Date|null;
     createdAt: Date;
     updatedAt: Date;
 };
 export interface OrderTypesPopulates {
-    userID: mongoose.Types.ObjectId;
+    userID: {
+        _id:mongoose.Types.ObjectId;
+        name:string;
+        email:string;
+        mobile:string;
+    };
     products: {
         productID: Pick<ProductTypes, "_id"|"name"|"brand"|"category"|"price"|"weight"|"flavor"|"images"|"size">;
         name:string;
@@ -69,6 +76,8 @@ export interface OrderTypesPopulates {
     };
     orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
     deliveredAt?: Date;
+    otp?:string;
+    otpExpiryTime:Date|null;
     createdAt: Date;
     updatedAt: Date;
 };
@@ -124,6 +133,11 @@ const orderSchema = new mongoose.Schema<OrderTypes>({
     orderStatus:{
         type:String,
         enum:["pending", "processing", "shipped", "delivered", "cancelled"]
+    },
+    otp:String,
+    otpExpiryTime:{
+        type:Date,
+        default:null
     },
     deliveredAt:Date
 }, {timestamps:true});
