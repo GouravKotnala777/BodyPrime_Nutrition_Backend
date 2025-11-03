@@ -75,6 +75,22 @@ export async function searchProducts(req:Request, res:Response, next:NextFunctio
     }
 };
 
+export async function getSimilarProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {brand, category} = req.query;
+
+        const similarProducts = await Product.find({
+            ...(brand&&{brand}),
+            ...(category&&{category})
+        });
+        
+        sendSuccessResponse(res, "Single product", similarProducts, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
 export async function getSingleProduct(req:Request, res:Response, next:NextFunction) {
     try {
         const {productID} = req.params;
@@ -90,7 +106,8 @@ export async function getSingleProduct(req:Request, res:Response, next:NextFunct
         console.log(error);
         next(error);
     }
-}
+};
+
 
 export async function updateProduct(req:Request, res:Response, next:NextFunction) {
     try {
