@@ -77,11 +77,14 @@ export async function searchProducts(req:Request, res:Response, next:NextFunctio
 
 export async function getSimilarProduct(req:Request, res:Response, next:NextFunction) {
     try {
-        const {brand, category} = req.query;
+        const {brand, category, excludeProductID} = req.query;
+
+        const validValue = (value?:string) => value&&value!=="undefined"&&value!=="null"&&value.trim()!=="";
 
         const similarProducts = await Product.find({
-            ...(brand&&{brand}),
-            ...(category&&{category})
+            _id:{$ne:excludeProductID},
+            ...(validValue(brand as string)&&{brand}),
+            ...(validValue(category as string)&&{category})
         });
         
         sendSuccessResponse(res, "Single product", similarProducts, 200);
