@@ -3,15 +3,9 @@ import mongoose, { Model } from "mongoose";
 export interface ProductTypes {
     _id:mongoose.Schema.Types.ObjectId;
     name:string;
-    price:number;
     brand:string;
     category:"protein"|"pre-workout"|"vitamins"|"creatine"|"other";
-    size:number;
-    tag:string[];
     description?: string;
-    images?: string[];
-    stock?: number;
-    weight?: string;
     ingredients?: string[];
     nutritionFacts?: {
         servingSize: string;
@@ -24,10 +18,23 @@ export interface ProductTypes {
     rating: number;
     avgRating:number;
     numReviews: number;
-    flavor?:string;
-    warning?:string[];
-    soldCount:number;
     returnCount:number;
+    images?: string[];
+
+    variants:string[];
+    //variants:mongoose.Schema.Types.ObjectId[];
+
+    //size:number; // remove this field
+    
+    price:number;
+    //description?: string; // product & variant both have description field
+    stock?: number;
+    weight?: string;
+    flavor?:string;
+    warnings?:string[];
+    soldCount:number;
+    //images?: string[]; // product & variant both have images field
+    tags:string[];
 };
 
 const productSchema = new mongoose.Schema<ProductTypes>({
@@ -40,10 +47,6 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     },
     description: { type: String },
     images: [{ type: String }],
-    price: { type: Number, required: true },
-    stock: { type: Number, default: 0 },
-    weight: { type: String },
-    flavor: { type: String },
     ingredients: [{ type: String }],
     nutritionFacts: {
       servingSize: { type: String },
@@ -56,24 +59,35 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     rating: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
-    size:{
+    returnCount:{
         type:Number,
-        required:true
+        default:0
     },
-    tag:[{
+    variants:[{
         type:String
     }],
-    warning:[{
+
+
+    //size:{ // removed this field
+    //    type:Number,
+    //    required:true
+    //},
+
+
+    price: { type: Number, required: true },
+    weight:{ type: String, required:true },
+    stock: { type: Number, default: 0 },
+    flavor: { type: String, default:"unflavored" },
+    warnings:[{
         type:String
     }],
     soldCount:{
         type:Number,
         default:0
     },
-    returnCount:{
-        type:Number,
-        default:0
-    }
+    tags:[{
+        type:String
+    }]
 
 }, {
     timestamps:true
