@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
 import Product, { ProductTypes } from "../models/product.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
+import Variant from "../models/variant.model.js";
 
 
 export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"|"soldCount"|"returnCount"|"createdAt"; searchQuery:string;}>, res:Response, next:NextFunction) {
@@ -21,6 +22,7 @@ export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchFi
                 }};
 
         const allProducts = await Product.find(findWith)
+        //.populate({model:"Variant", path:"variants", select:"price flavor description warnings weights stock images dietaryType tags"})
         .skip(Number(skip)*limit)
         .limit(limit)
         .sort({
@@ -241,37 +243,71 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
     try {
         const {
             name,
-            price,
             brand,
             category,
-            size,
-            weight,
+            //size, // removed this field
             
+            
+            
+            description,
+            weight,
+            price,
             flavor,
-            warning,
-            tag
+            warnings,
+            dietaryType,
+            tags
         } = req.body;
+
+        console.log({
+            name,
+            brand,
+            category,            
+            description,
+            weight,
+            price,
+            flavor,
+            warnings,
+            dietaryType,
+            tags
+        });
+        
 
         if (
             !name ||
             !price ||
             !brand ||
             !category ||
-            !size ||
-            !tag ||
+            !description ||
+            !dietaryType ||
+            !tags ||
             !weight
         ) return next(new ErrorHandler("All fields are required", 404));
 
+        //const newVariant = await Variant.create({
+        //    description,
+        //    price,
+        //    weights,
+        //    flavor,
+        //    warnings,
+        //    dietaryType,
+        //    tags
+        //})
+
+        //if (!newVariant) return next(new ErrorHandler("Internal Server Error", 500));
+
         const newProduct = await Product.create({
             name,
-            price,
             brand,
             category,
-            size,
-            tag,
+
+            variants:[`${(flavor||"unflavored")}#${weight}#${price}#${dietaryType}#${warnings}#${tags}#1#${description}`],
+            
+            description,
+            price,
             weight,
-            flavor,
-            warning
+            flavor:(flavor||"unflavored"),
+            warnings,
+            tags
         });
 
         if (!newProduct) return next(new ErrorHandler("Internal Server Error", 500));
@@ -279,6 +315,57 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
         const product = newProduct.toObject();
 
         sendSuccessResponse(res, "Product created successfully", {...product}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+
+export async function addProductVariant(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {
+            description,
+            weight,
+            price,
+            flavor,
+            warnings,
+            dietaryType,
+            tags
+        } = req.body;
+        const {productID} = req.query;
+
+        console.log({           
+            description,
+            weight,
+            price,
+            flavor,
+            warnings,
+            dietaryType,
+            tags
+        });
+        
+
+        if (
+            !price ||
+            !description ||
+            !dietaryType ||
+            !tags ||
+            !weight
+        ) return next(new ErrorHandler(`All fields are required ${price}, ${description}, ${dietaryType}, ${tags}, ${weight}, ${productID}`, 404));
+
+        const newVariant = `${(flavor||"unflavored")}#${weight}#${price}#${dietaryType}#${warnings}#${tags}#1#${description}`;
+
+        //if (!newVariant) return next(new ErrorHandler("Internal Server Error", 500));
+
+        const updateProductByID = await Product.findByIdAndUpdate(productID, {
+            $push:{variants:newVariant}
+        });
+
+        if (!updateProductByID) return next(new ErrorHandler("Internal Server Error", 500));
+
+        const product = updateProductByID.toObject();
+
+        sendSuccessResponse(res, "Product created successfully", product, 201);
     } catch (error) {
         console.log(error);
         next(error);
