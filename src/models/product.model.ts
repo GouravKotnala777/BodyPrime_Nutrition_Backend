@@ -31,6 +31,7 @@ export interface ProductTypes {
     stock?: number;
     weight?: string;
     flavor?:string;
+    dietaryType:"veg"|"nonveg"|"vegan";
     warnings?:string[];
     soldCount:number;
     //images?: string[]; // product & variant both have images field
@@ -78,6 +79,7 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     weight:{ type: String, required:true },
     stock: { type: Number, default: 0 },
     flavor: { type: String, default:"unflavored" },
+    dietaryType:{type:String, enum:["veg", "nonveg", "vegan"], default:"veg"},
     warnings:[{
         type:String
     }],
