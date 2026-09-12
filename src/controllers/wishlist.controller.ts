@@ -1,18 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
-import Wishlist from "../models/wishlist.model.js";
+import Wishlist, { WishlistTypesPopulates } from "../models/wishlist.model.js";
 import { AuthenticatedRequest } from "../middlewares/middlewares.js";
 import { sendSuccessResponse } from "../utils/functions.js";
+import { Document } from "mongoose";
 
 
 export async function getWishlist(req:Request, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
         
-        const myWishlist = await Wishlist.findOne({userID}).populate({path:"products", model:"Product", select:"_id name category brand price images"});
+        const myWishlist = await Wishlist.findOne({userID})
+        .populate({path:"products.productID", select:"_id name brand category images", model:"Product"}) as (Document<unknown, any, WishlistTypesPopulates>&WishlistTypesPopulates)|null;
         if (!myWishlist) return next(new ErrorHandler("Internal Server Error", 500));
 
-        sendSuccessResponse(res, "", myWishlist.products, 200);
+        sendSuccessResponse(res, "", myWishlist, 200);
     } catch (error) {
         console.log(error);
         next(error);
@@ -22,9 +24,7 @@ export async function getWishlist(req:Request, res:Response, next:NextFunction) 
 export async function addToWishlist(req:Request, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
-        const {productID} = req.body;
-
-        console.log(productID);
+        const {productID, variant} = req.body;
         
         if (!productID) return next(new ErrorHandler("productID not found", 400));
 
@@ -33,12 +33,12 @@ export async function addToWishlist(req:Request, res:Response, next:NextFunction
         
         let isProductAlreadyAdded:boolean|null = null;
         if (isListExist) {
-            isProductAlreadyAdded = isListExist.products.some((p) => p.toString() === productID);
+            isProductAlreadyAdded = isListExist.products.some((p) => (p.productID.toString() === productID && p.variant === variant));
             
             const updatedBody = isProductAlreadyAdded ?
-            {$pull:{products:productID}}
+            {$pull:{products:{productID, variant}}}
                 :
-                {$push:{products:productID}};
+                {$push:{products:{productID, variant}}};
 
             const updatedCart = await Wishlist.findByIdAndUpdate(isListExist._id, updatedBody);
             
@@ -47,13 +47,15 @@ export async function addToWishlist(req:Request, res:Response, next:NextFunction
         else{
             const newCart = await Wishlist.create({
                 userID,
-                products:[productID]
+                products:[{
+                    productID, variant
+                }]
             });
             if (!newCart) return next(new ErrorHandler("Internal Server Error", 500));
         }
         
         const resMessage = isProductAlreadyAdded?"removed from wishlist":"add to wishlist";
-        const resObj = isProductAlreadyAdded?{productID, operation:-1}:{productID, operation:1};
+        const resObj = isProductAlreadyAdded?{productID, variant, operation:-1}:{productID, variant, operation:1};
         
         sendSuccessResponse(res, resMessage, resObj, 201);
     } catch (error) {
