@@ -14,7 +14,7 @@ export interface CartTypes {
 export interface CartTypesPopulates {
   userID: mongoose.Types.ObjectId;
   products: {
-    productID: Pick<ProductTypes, "_id"|"name"|"brand"|"category">;
+    productID: Pick<ProductTypes, "_id"|"name"|"brand"|"category"|"images">;
     variant:string;
     //variantID: Pick<ProductVariantInterface, "price"|"weights"|"flavor"|"images">;
     quantity: number;
