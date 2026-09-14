@@ -1,35 +1,61 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorHandler } from "../utils/classes.js";
-import Product, { ProductTypes } from "../models/product.model.js";
+import Product from "../models/product.model.js";
 import { sendSuccessResponse } from "../utils/functions.js";
-import Variant from "../models/variant.model.js";
 
 
-export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"|"soldCount"|"returnCount"|"createdAt"; searchQuery:string;}>, res:Response, next:NextFunction) {
+export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"|"soldCount"|"returnCount"|"createdAt"|"null"; searchQuery:string; subCategory:string; dietaryTypes:string; categories:string; minPrice:number; maxPrice:number; brands:string; rating:0|1|2|3|4|5; flavors:string;}>, res:Response, next:NextFunction) {
     try {
         const limit = 1;
-        const {skip=0, searchField, searchQuery} = req.query;
+        const {skip=0, searchField, searchQuery, subCategory, dietaryTypes, categories, minPrice, maxPrice, brands, rating, flavors} = req.query;
+ 
 
-        const findWith = (!searchField||!searchQuery) ?
-            {}
-            :
-            //(searchField === "soldCount") ?
-            //    {}
-            //    :
-                {[searchField]:{
-                    $regex:searchQuery,
-                    $options:"i"
-                }};
+        const toArray = (value: string | string[] | undefined): string[] => {
+            if (!value) return [];
+            return Array.isArray(value) ? value : [value];
+        };
+        
 
-        const allProducts = await Product.find(findWith)
-        //.populate({model:"Variant", path:"variants", select:"price flavor description warnings weights stock images dietaryType tags"})
+        const query = (searchField && searchField !== "null" && searchQuery && searchQuery !== "null")?{
+            [searchField]:{$regex:searchQuery, $options:"i"},
+            ...((subCategory&&subCategory!=="null")&&{subCategory:{$regex:subCategory, $options:"i"}})
+        }:{};
+
+        const filters = {
+            dietaryTypes: toArray(dietaryTypes),
+            categories:toArray(categories),
+            brands: toArray(brands),
+            flavors: toArray(flavors),
+            price: {
+                min: Number(minPrice ?? 0),
+                max: Number(maxPrice ?? Infinity)
+            },
+            rating: Number(rating ?? 0)
+        };
+        
+        console.log(query);
+        console.log(filters);
+        
+
+        const findWith = {
+            ...(filters.categories.length!==0&&{category:{$in:filters.categories}}),
+            ...(filters.brands.length!==0&&{brand:{$in:filters.brands}}),
+            ...(filters.dietaryTypes.length!==0&&{dietaryType:{$in:filters.dietaryTypes}}),
+            ...(filters.flavors.length!==0&&{flavor:{$in:filters.flavors}}),
+            price:{$gte:filters.price.min, $lte:filters.price.max},
+            ...(filters.rating!==0&&{rating:{$gte:filters.rating}}),
+        };
+            
+        
+        const allProducts = await Product.find({
+            $and:[
+                findWith,
+                query
+            ]
+        })
         .skip(Number(skip)*limit)
-        .limit(limit)
-        .sort({
-            ...(searchField==="soldCount"&&{soldCount:-1}),
-            ...(searchField==="createdAt"&&{createdAt:-1})
-        });
-
+        .limit(limit);
+        
         const resMessage = (allProducts.length === 0) ? "No product yet!" : "All products";
         sendSuccessResponse(res, resMessage, allProducts, 200);
     } catch (error) {
@@ -121,6 +147,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
             price,
             brand,
             category,
+            subCategory,
             size,
             tag,
             description,
@@ -144,6 +171,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
             !price &&
             !brand &&
             !category &&
+            !subCategory &&
             !size &&
             !tag &&
             !description &&
@@ -167,6 +195,7 @@ export async function updateProduct(req:Request, res:Response, next:NextFunction
             ...(price&&{price}),
             ...(brand&&{brand}),
             ...(category&&{category}),
+            ...(subCategory&&{subCategory}),
             ...(size&&{size}),
             ...(tag&&{tag}),
             ...(description&&{description}),
@@ -245,6 +274,7 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
             name,
             brand,
             category,
+            subCategory,
             //size, // removed this field
             
             
@@ -261,7 +291,8 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
         console.log({
             name,
             brand,
-            category,            
+            category,
+            subCategory,
             description,
             weight,
             price,
@@ -277,6 +308,7 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
             !price ||
             !brand ||
             !category ||
+            !subCategory ||
             !description ||
             !dietaryType ||
             !tags ||
@@ -299,12 +331,14 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
             name,
             brand,
             category,
+            subCategory,
 
             variants:[`${(flavor||"unflavored")}#${weight}#${price}#${dietaryType}#${warnings}#${tags}#1#${description}`],
             
             description,
             price,
             weight,
+            dietaryType:(dietaryType||"veg"),
             flavor:(flavor||"unflavored"),
             warnings,
             tags
@@ -333,17 +367,6 @@ export async function addProductVariant(req:Request, res:Response, next:NextFunc
             tags
         } = req.body;
         const {productID} = req.query;
-
-        console.log({           
-            description,
-            weight,
-            price,
-            flavor,
-            warnings,
-            dietaryType,
-            tags
-        });
-        
 
         if (
             !price ||

@@ -1,10 +1,11 @@
 import mongoose, { Model } from "mongoose";
-
+export type CategoryTypes = "protein"|"weight"|"pre-workout"|"vitamins"|"minerals"|"fatty acids"|"ayurvedic"|"wellness"|"health food";
 export interface ProductTypes {
     _id:mongoose.Schema.Types.ObjectId;
     name:string;
     brand:string;
-    category:"protein"|"pre-workout"|"vitamins"|"creatine"|"other";
+    category:CategoryTypes;
+    subCategory:string;
     description?: string;
     ingredients?: string[];
     nutritionFacts?: {
@@ -44,7 +45,11 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     category: {
       type: String,
       required: true,
-      enum: ["protein", "pre-workout", "vitamins", "creatine", "other"],
+      enum: ["protein", "pre-workout", "vitamins", "weight", "minerals", "fatty acids", "ayurvedic", "wellness", "health food"],
+    },
+    subCategory: {
+      type: String,
+      required: true
     },
     description: { type: String },
     images: [{ type: String }],
