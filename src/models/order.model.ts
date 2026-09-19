@@ -1,5 +1,6 @@
 import mongoose, { Model } from "mongoose";
 import { ProductTypes } from "./product.model.js";
+import { ProductVariantInterface } from "./variant.model.js";
 
 export type PaymentStatusType = "canceled"|"processing"|"requires_action"|"requires_capture"|"requires_confirmation"|"requires_payment_method"|"succeeded"|"refunded";
 export interface OrderTypes {
@@ -11,7 +12,9 @@ export interface OrderTypes {
         quantity: number;
     }[];
     shippingInfo: {
-        address: string;
+        address1: string;
+        address2: string;
+        landmark?: string;
         city: string;
         state: string;
         country: string;
@@ -47,13 +50,15 @@ export interface OrderTypesPopulates {
         mobile:string;
     };
     products: {
-        productID: Pick<ProductTypes, "_id"|"name"|"brand"|"category"|"price"|"weight"|"flavor"|"images"|"size">;
+        productID: (Pick<ProductTypes, "_id"|"name"|"brand"|"category">&Pick<ProductVariantInterface, "price"|"weights"|"flavor"|"images">);
         name:string;
         price:number;
         quantity: number;
     }[];
     shippingInfo: {
-        address: string;
+        address1: string;
+        address2: string;
+        landmark?: string;
         city: string;
         state: string;
         country: string;
@@ -102,7 +107,9 @@ const orderSchema = new mongoose.Schema<OrderTypes>({
         quantity:Number
     }],
     shippingInfo:{
-        address: String,
+        address1: String,
+        address2: String,
+        landmark: String,
         city: String,
         state: String,
         country: String,

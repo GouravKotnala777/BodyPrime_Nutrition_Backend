@@ -6,7 +6,7 @@ import { sendSuccessResponse } from "../utils/functions.js";
 
 export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchField:"name"|"category"|"brand"|"soldCount"|"returnCount"|"createdAt"|"null"; searchQuery:string; subCategory:string; dietaryTypes:string; categories:string; minPrice:number; maxPrice:number; brands:string; rating:0|1|2|3|4|5; flavors:string;}>, res:Response, next:NextFunction) {
     try {
-        const limit = 1;
+        const limit = 5;
         const {skip=0, searchField, searchQuery, subCategory, dietaryTypes, categories, minPrice, maxPrice, brands, rating, flavors} = req.query;
  
 
@@ -16,10 +16,14 @@ export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchFi
         };
         
 
-        const query = (searchField && searchField !== "null" && searchQuery && searchQuery !== "null")?{
-            [searchField]:{$regex:searchQuery, $options:"i"},
-            ...((subCategory&&subCategory!=="null")&&{subCategory:{$regex:subCategory, $options:"i"}})
-        }:{};
+        const query = 
+            (searchField && searchField !== "null" && searchQuery && searchQuery !== "null") ?
+                {
+                    [searchField]:{$regex:searchQuery, $options:"i"},
+                    ...((subCategory&&subCategory!=="null")&&{subCategory:{$regex:subCategory, $options:"i"}})
+                }
+                :
+                {};
 
         const filters = {
             dietaryTypes: toArray(dietaryTypes),
@@ -32,10 +36,6 @@ export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchFi
             },
             rating: Number(rating ?? 0)
         };
-        
-        console.log(query);
-        console.log(filters);
-        
 
         const findWith = {
             ...(filters.categories.length!==0&&{category:{$in:filters.categories}}),
@@ -54,7 +54,8 @@ export async function getProducts(req:Request<{}, {}, {}, {skip:number; searchFi
             ]
         })
         .skip(Number(skip)*limit)
-        .limit(limit);
+        .limit(limit)
+        .sort({...((searchField === "soldCount")&&{[searchField]:-1})});
         
         const resMessage = (allProducts.length === 0) ? "No product yet!" : "All products";
         sendSuccessResponse(res, resMessage, allProducts, 200);
@@ -287,20 +288,6 @@ export async function createProduct(req:Request, res:Response, next:NextFunction
             dietaryType,
             tags
         } = req.body;
-
-        console.log({
-            name,
-            brand,
-            category,
-            subCategory,
-            description,
-            weight,
-            price,
-            flavor,
-            warnings,
-            dietaryType,
-            tags
-        });
         
 
         if (

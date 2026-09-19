@@ -121,6 +121,7 @@ export async function removeFromCart(req:Request<{}, {}, {productID:string; vari
         if (!cart) return next(new ErrorHandler("cart not found", 404));
         
         const findResult = cart.products.find((p) => (p.productID.toString() === productID && p.variant===variant));
+
         if (!findResult) return next(new ErrorHandler("findResult not found", 404));
         
         if (findResult.quantity-quantity >= 1) {
@@ -134,14 +135,14 @@ export async function removeFromCart(req:Request<{}, {}, {productID:string; vari
         else{
             const updatedCart = await Cart.findByIdAndUpdate(cart._id, {
                 $pull:{
-                    products:{productID}
+                    products:{productID, variant},
                 },
                 $inc:{totalPrice:-(price*findResult.quantity)}
             }, {new:true});
             
             if (!updatedCart) return next(new ErrorHandler("updatedCart not found", 404));
 
-            sendSuccessResponse(res, "Product removed from cart", {products:selectedProduct._id, variant, quantity:0}, 201);            
+            sendSuccessResponse(res, "Product removed from cart2", {products:selectedProduct._id, variant, quantity:0}, 201);            
         }
     } catch (error) {
         console.log(error);

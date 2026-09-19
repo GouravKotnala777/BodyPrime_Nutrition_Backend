@@ -6,6 +6,8 @@ import { ErrorHandler } from "../utils/classes.js";
 import Stripe from "stripe";
 import Cart from "../models/cart.model.js";
 import { Document } from "mongoose";
+import Address from "../models/address.model.js";
+console.log();
 
 interface OrderRequestType extends AuthenticatedRequest  {
     products: {
@@ -159,10 +161,14 @@ export async function verifyDeliveryConfirmation(req:Request, res:Response, next
 export async function myOrders(req:Request, res:Response, next:NextFunction) {
     try {
         const userID = (req as AuthenticatedRequest).user.id;
-        
+        const {skip} = req.query;
+        const LIMIT = 5;
+
         const myOrders = await Order.find({
             userID
-        });
+        }).populate("products.productID", "images", "Product")
+        .skip(Number(skip??0)*LIMIT)
+        .limit(LIMIT);
 
 
         //if (myOrders) return next(new Error("Internal server error"));
@@ -181,11 +187,12 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
         });
         const {
             products,
-            address, city, state, country, pincode,
+            address1, address2, landmark, city, state, country, pincode,
             phone,
             method, transactionID, status,
             itemsPrice, taxPrice, shippingPrice, discount, totalPrice,
-            orderStatus
+            orderStatus,
+            saveAddressConfirmation
         }:{
             products:{
                 productID:string;
@@ -193,25 +200,24 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
                 price:number;
                 quantity: number;
             }[];
-            address:string; city:string; state:string; country:string; pincode:string;
+            address1:string; address2:string; landmark?:string; city:string; state:string; country:string; pincode:string;
             phone:string;
             method:"COD"|"Stripe"; transactionID?:string; status:"pending"|"paid"|"failed"|"refunded";
             itemsPrice:number; taxPrice:number; shippingPrice:number; discount:number; totalPrice:number;
             orderStatus:"pending"|"processing"|"shipped"|"delivered"|"cancelled";
             deliveredAt:Date;
+            saveAddressConfirmation:boolean;
         } = req.body;
 
         if (!products || products.length === 0) return next(new ErrorHandler("no product found", 404));
         if (
-            !address || !city || !state || !country || !pincode ||
-            !phone ||
+            !address1 || !address2 || !city || !state || !country || !pincode ||
             !method || !status ||
             !itemsPrice || !totalPrice ||
             !orderStatus
         ) return next(new ErrorHandler("All fields are required", 400));
 
         const userID = (req as AuthenticatedRequest).user.id;
-
 
         let paymentIntent:Stripe.Response<Stripe.PaymentIntent>|null = null;
         if (method === "Stripe") {
@@ -232,10 +238,23 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
             orderStatus:"pending",
             paymentInfo:{method, transactionID, status},
             priceSummary:{itemsPrice, taxPrice, shippingPrice, discount, totalPrice},
-            shippingInfo:{address, city, state, country, pincode, phone}
+            shippingInfo:{address1, address2, landmark, city, state, country, pincode, phone}
         });
 
+        if (saveAddressConfirmation) {
+            await Address.create({
+                userID,
+                address1, address2, landmark, city, state, country, pincode
+            });
+        }
+
         if (!newOrder) return next(new Error("Internal server error"));
+        
+        await Cart.findOneAndUpdate({userID}, {
+            products:[], totalPrice:0
+        });
+        
+        //if (!clearCartAfterOrder) return next(new Error("Internal server error 2"));
                 
         sendSuccessResponse(res, "Order successfull", {clientSecret:paymentIntent?.client_secret, newOrder}, 201);
     } catch (error) {
