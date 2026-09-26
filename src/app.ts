@@ -12,6 +12,7 @@ import orderRouter from "./routes/order.router.js";
 import dotenv from "dotenv";
 import wishlistRouter from "./routes/wishlist.router.js";
 import addressRouter from "./routes/address.router.js";
+import dashboardRouter from "./routes/dashboard.router.js";
 dotenv.config();
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/wishlist", wishlistRouter);
 app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/address", addressRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
 app.use(errorMiddleware);
 
