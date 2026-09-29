@@ -7,6 +7,7 @@ import Stripe from "stripe";
 import Cart from "../models/cart.model.js";
 import { Document } from "mongoose";
 import Address from "../models/address.model.js";
+import Product from "../models/product.model.js";
 console.log();
 
 interface OrderRequestType extends AuthenticatedRequest  {
@@ -196,7 +197,7 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
         }:{
             products:{
                 productID:string;
-                name:string;
+                name:string; // it contains name#productID#flavor#weight#stock
                 price:number;
                 quantity: number;
             }[];
@@ -232,27 +233,78 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
             };
         }
 
-        const newOrder = await Order.create({
-            userID,
-            products,
-            orderStatus:"pending",
-            paymentInfo:{method, transactionID, status},
-            priceSummary:{itemsPrice, taxPrice, shippingPrice, discount, totalPrice},
-            shippingInfo:{address1, address2, landmark, city, state, country, pincode, phone}
-        });
+        let newOrder = null;
 
-        if (saveAddressConfirmation) {
-            await Address.create({
-                userID,
-                address1, address2, landmark, city, state, country, pincode
-            });
+        for (const product of products) {
+            const isProductAvailable = await Product.findById(product.productID);
+            if (isProductAvailable) {
+
+                const orderFlavor = product.name.split("#")[2];
+                const orderWeight = product.name.split("#")[3];
+
+                const updatedVariants = isProductAvailable.variants.map((vari) => {
+                    const flavor = vari.split("#")[0];
+                    const weight = vari.split("#")[1];
+                    const stock = Number(vari.split("#")[6]);
+
+                    //console.log(flavor, orderFlavor, weight, orderWeight, stock, product.quantity);
+                    
+
+                    if (flavor === orderFlavor && weight === orderWeight && stock >= product.quantity) {
+                        const targetedVariant = vari.split("#");
+                        targetedVariant[6] = String(Number(targetedVariant[6])-product.quantity);
+                        return targetedVariant.join("#");
+                    }
+                    else{
+                        return vari;
+                    }
+                });
+                if (isProductAvailable._id.toString() === product.productID && isProductAvailable.flavor === orderFlavor && isProductAvailable.weight === orderWeight && isProductAvailable.stock >= product.quantity) {
+                    isProductAvailable.stock -= product.quantity;
+                }
+
+                const isVariantNotUpdated = isProductAvailable.variants.every((iter, ind) => iter === updatedVariants[ind]);
+
+                if (isVariantNotUpdated) {
+                    return next(new ErrorHandler("i think (flavor === orderFlavor && weight === orderWeight && stock >= product.quantity) condition failed so variants not updated", 400));
+                }
+
+
+                isProductAvailable.variants = updatedVariants;
+                await isProductAvailable.save();
+
+                newOrder = await Order.create({
+                    userID,
+                    products,
+                    orderStatus:"pending",
+                    paymentInfo:{method, transactionID, status},
+                    priceSummary:{itemsPrice, taxPrice, shippingPrice, discount, totalPrice},
+                    shippingInfo:{address1, address2, landmark, city, state, country, pincode, phone}
+                });
+
+
+
+                if (saveAddressConfirmation) {
+                    await Address.create({
+                        userID,
+                        address1, address2, landmark, city, state, country, pincode
+                    });
+                }
+
+                //if (!newOrder) return next(new Error("Internal server error"));
+                
+                await Cart.findOneAndUpdate({userID}, {
+                    products:[], totalPrice:0
+                });
+            }
+            else{
+                console.log(`${product.productID} available nahi hai isliye cart me add nahi hoga`);
+            }
+
         }
 
-        if (!newOrder) return next(new Error("Internal server error"));
+
         
-        await Cart.findOneAndUpdate({userID}, {
-            products:[], totalPrice:0
-        });
         
         //if (!clearCartAfterOrder) return next(new Error("Internal server error 2"));
                 
