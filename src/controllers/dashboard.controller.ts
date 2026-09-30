@@ -143,7 +143,51 @@ export async function getBrandToCategoryStockData(req:Request<{},{},{},{category
             return next(new ErrorHandler("category query is undefined", 404));
         }
         const result = await Product.find({category}, "brand stock");
-        console.log(result);
+        //console.log(result);
+        
+        //const productSummaryData = await Product.aggregate([
+        //    {
+        //        $group:{
+        //            _id:"$category",
+        //            count:{$sum:1}
+        //        }
+        //    },
+        //    {
+        //        $group:{
+        //            _id:null,
+        //            data:{
+        //                $push:{k:"$_id", v:"$count"}
+        //            },
+        //            totalProducts:{$sum:"$count"}
+        //        }
+        //    },
+        //    {
+        //        $project:{
+        //            _id:0,
+        //            data:{$arrayToObject:"$data"},
+        //            totalProducts:1
+        //        }
+        //    }
+        //]);
+        
+
+        sendSuccessResponse(res, "", result, 200);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};
+export async function getAllOutStockedProducts(req:Request<{},{},{},{}>, res:Response, next:NextFunction) {
+    try {
+        //if (!category) {
+        //    return next(new ErrorHandler("category query is undefined", 404));
+        //}
+        const result = await Product.find({
+            outOfStocked:{
+                $not:{$size:0}
+            }
+        }, "outOfStocked"); // take _id brand category sub directly
+        //console.log(result);
         
         //const productSummaryData = await Product.aggregate([
         //    {
