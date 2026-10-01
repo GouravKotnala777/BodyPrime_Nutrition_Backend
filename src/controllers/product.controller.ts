@@ -381,3 +381,49 @@ export async function addProductVariant(req:Request, res:Response, next:NextFunc
         next(error);
     }
 };
+export async function restockProduct(req:Request, res:Response, next:NextFunction) {
+    try {
+        const {productID, flavor, weight, restockValue} = req.body;
+
+        if (!flavor || !weight || !restockValue) return next(new ErrorHandler(`${flavor}, ${weight}, ${restockValue} something is undefined`, 404));
+        if (!productID) return next(new ErrorHandler("productID not found", 404));
+                
+        const findProductByID = await Product.findById(productID);
+        if (!findProductByID) return next(new ErrorHandler("product with this productID not found", 404));
+
+        if(findProductByID.flavor === flavor && findProductByID.weight === weight){
+            findProductByID.stock = restockValue;
+        }
+        
+        const updatedVariantsArray = findProductByID.variants.map((v) => {
+            const variantFlavor = v.split("#")[0];
+            const variantWeight = v.split("#")[1];
+            if (variantFlavor === flavor && variantWeight === weight) {
+                const vArray = v.split("#");
+                vArray[6] = restockValue;
+                //return `${variantFlavor}#${variantWeight}#${variantPrice}#${variantDietary}###${stock}#${variantDescription}`;
+                return vArray.join("#");
+            }
+            else{
+                return v;
+            }
+        });
+        const updatedOutOfStockedArray = findProductByID.outOfStocked.filter((o) => {
+            const outOfStockedFlavor = o.split("#")[4];
+            const outOfStockedWeight = o.split("#")[5];
+            if (outOfStockedFlavor !== flavor && outOfStockedWeight !== weight) {
+                return o;
+            }
+        });
+
+        findProductByID.variants = updatedVariantsArray;
+        findProductByID.outOfStocked = updatedOutOfStockedArray;
+
+        await findProductByID.save();
+
+        sendSuccessResponse(res, "Product restocked successfully", {variants:updatedVariantsArray, outOfStocked:updatedOutOfStockedArray}, 201);
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+};

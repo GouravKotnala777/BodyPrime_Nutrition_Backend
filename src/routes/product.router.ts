@@ -1,6 +1,6 @@
 import express from "express";
 import { isUserAdmin, isUserAuthenticated, upload } from "../middlewares/middlewares.js";
-import { addImages, addProductVariant, createProduct, deleteProduct, getProducts, getSimilarProduct, getSingleProduct, searchProducts, updateProduct } from "../controllers/product.controller.js";
+import { addImages, addProductVariant, createProduct, deleteProduct, getProducts, getSimilarProduct, getSingleProduct, restockProduct, searchProducts, updateProduct } from "../controllers/product.controller.js";
 
 const productRouter = express.Router();
 
@@ -13,5 +13,6 @@ productRouter.route("/add_image").post(isUserAuthenticated, isUserAdmin, upload.
 productRouter.route("/update_product").put(isUserAuthenticated, isUserAdmin, updateProduct);
 productRouter.route("/add_variant").put(isUserAuthenticated, isUserAdmin, addProductVariant);
 productRouter.route("/delete_product").delete(isUserAuthenticated, isUserAdmin, deleteProduct);
+productRouter.route("/restock_product").patch(isUserAuthenticated, isUserAdmin, restockProduct);
 
 export default productRouter;

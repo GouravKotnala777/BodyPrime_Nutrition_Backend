@@ -23,13 +23,10 @@ export interface ProductTypes {
     images?: string[];
 
     variants:string[];
-    //variants:mongoose.Schema.Types.ObjectId[];
-
-    //size:number; // remove this field
-    
+    outOfStocked:string[]; // brand#category#subcategory#flavor#weight
     price:number;
     //description?: string; // product & variant both have description field
-    stock?: number;
+    stock: number;
     weight?: string;
     flavor?:string;
     dietaryType:"veg"|"nonveg"|"vegan";
@@ -72,17 +69,13 @@ const productSchema = new mongoose.Schema<ProductTypes>({
     variants:[{
         type:String
     }],
-
-
-    //size:{ // removed this field
-    //    type:Number,
-    //    required:true
-    //},
-
+    outOfStocked:[{
+        type:String
+    }],
 
     price: { type: Number, required: true },
     weight:{ type: String, required:true },
-    stock: { type: Number, default: 0 },
+    stock: { type: Number, default: 1 },
     flavor: { type: String, default:"unflavored" },
     dietaryType:{type:String, enum:["veg", "nonveg", "vegan"], default:"veg"},
     warnings:[{
