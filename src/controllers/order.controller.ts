@@ -253,6 +253,9 @@ export async function createOrder(req:Request, res:Response, next:NextFunction) 
                     if (flavor === orderFlavor && weight === orderWeight && stock >= product.quantity) {
                         const targetedVariant = vari.split("#");
                         targetedVariant[6] = String(Number(targetedVariant[6])-product.quantity);
+                        if (Number(targetedVariant[6]) < 1) {
+                            isProductAvailable.outOfStocked.push(`${isProductAvailable._id}#${isProductAvailable.brand}#${isProductAvailable.category}#${isProductAvailable.subCategory}#${flavor}#${weight}`);
+                        }
                         return targetedVariant.join("#");
                     }
                     else{
