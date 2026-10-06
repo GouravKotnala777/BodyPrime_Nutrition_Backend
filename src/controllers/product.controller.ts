@@ -93,7 +93,7 @@ export async function searchProducts(req:Request, res:Response, next:NextFunctio
                 }
             }).select("_id name brand category"),
             Product.find({
-                tag:{$in:[searchQuery]}
+                tags:{$in:[searchQuery]}
             }).select("_id name brand category tag")
         ]);
 
