@@ -25,7 +25,7 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 app.use(cors({
     origin:allowOrigins?.split(","),
-    methods:["GET", "POST", "PUT", "DELETE"],
+    methods:["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials:true
 }));
 
